@@ -13,7 +13,8 @@ import { ProviderAvailabilitySlotDto, ProviderUnavailabilityDto, RemovedUnavaila
 const NO_PROVIDER_PROFILE = "Authentification requise, ou ce compte n'a pas de profil prestataire";
 
 // Disponibilités côté prestataire et côté public.
-// La route « me » est déclarée avant « :id » (voir même remarque côté catalogue).
+// Les routes « me » sont déclarées AVANT « :id » (voir même remarque côté
+// catalogue) : sinon « me » serait capturé comme un identifiant.
 @ApiTags("Availability")
 @Controller("providers")
 export class ProviderAvailabilityController {
@@ -21,6 +22,28 @@ export class ProviderAvailabilityController {
     private readonly availability: AvailabilityService,
     private readonly context: ProviderContextService
   ) {}
+
+  /**
+   * GET /providers/me/availabilities — relire MON agenda hebdomadaire.
+   *
+   * Pendant en lecture de `PUT` ci-dessous, par symétrie avec
+   * `GET /providers/me/zones`. Sans elle, le prestataire devait relire son
+   * propre agenda par la route PUBLIQUE `/providers/:id/availabilities` en
+   * passant son propre identifiant — un détour que rien ne justifiait, et qui
+   * obligeait l'application à connaître son `providerId` avant d'afficher
+   * l'écran.
+   *
+   * Renvoie exactement ce que `PUT` a enregistré : c'est un vrai miroir.
+   */
+  @ApiBearerAuth()
+  @Get("me/availabilities")
+  @ApiOperation({ summary: "Get my weekly availability" })
+  @ApiEnvelopeResponse(ProviderAvailabilitySlotDto, { isArray: true, description: "Mon agenda hebdomadaire" })
+  @ApiErrorResponse(403, NO_PROVIDER_PROFILE)
+  async listMine(@Req() req: AuthenticatedRequest) {
+    const providerId = await this.context.requireProviderId(req.user?.id);
+    return ok(await this.availability.listForProvider(providerId));
+  }
 
   /**
    * PUT /providers/me/availabilities — remplace TOUT l'agenda hebdomadaire.

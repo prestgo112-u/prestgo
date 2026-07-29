@@ -192,6 +192,43 @@ describe("contrôle d'accès", () => {
       expect(response.status).toBe(200);
       expect(response.body.data).toHaveLength(2);
     });
+
+    /**
+     * Écart n°11 du cahier des charges mobile : l'écriture avait son PUT, la
+     * lecture passait par la route PUBLIQUE `/providers/:id/availabilities`
+     * avec son propre identifiant — un détour qui obligeait l'application à
+     * connaître son `providerId` avant même d'afficher l'écran.
+     */
+    it("laisse le prestataire relire son propre agenda, sans passer par son providerId", async () => {
+      await api(app)
+        .put("/providers/me/availabilities")
+        .set("Authorization", `Bearer ${providerToken}`)
+        .send({
+          slots: [
+            { weekday: 2, startTime: "09:00", endTime: "13:00" },
+            { weekday: 4, startTime: "15:00", endTime: "17:30" }
+          ]
+        });
+
+      const relecture = await api(app)
+        .get("/providers/me/availabilities")
+        .set("Authorization", `Bearer ${providerToken}`);
+
+      expect(relecture.status).toBe(200);
+      // Miroir exact de ce que le PUT vient d'enregistrer.
+      expect(relecture.body.data).toHaveLength(2);
+      expect(relecture.body.data.map((s: { weekday: number }) => s.weekday)).toEqual([2, 4]);
+      expect(relecture.body.data[0]).toMatchObject({ weekday: 2, startTime: "09:00", endTime: "13:00" });
+    });
+
+    it("refuse la relecture de l'agenda à un compte sans profil prestataire", async () => {
+      const response = await api(app)
+        .get("/providers/me/availabilities")
+        .set("Authorization", `Bearer ${clientToken}`);
+
+      expect(response.status).toBe(403);
+      expect(response.body.message).toContain("pas de profil prestataire");
+    });
   });
 
   describe("commentaire interne d'un litige", () => {
