@@ -51,11 +51,10 @@ export async function setup(): Promise<void> {
   const databaseUrl = applyTestEnv();
   const env = { ...process.env, DATABASE_URL: databaseUrl };
 
-  // Garde-fou : tout ce qui suit DÉTRUIT le contenu de la base. On refuse de
-  // continuer si l'URL ne désigne pas visiblement une base de test.
-  if (!/_test(\?|$)/.test(databaseUrl)) {
-    throw new Error(`Refus de préparer une base qui n'est pas de test : ${databaseUrl.replace(/:[^:@]*@/, ":***@")}`);
-  }
+  // Garde-fou : tout ce qui suit DÉTRUIT le contenu de la base.
+  // La vérification porte sur le NOM DE BASE réellement ciblé — voir
+  // `assertTestDatabaseUrl`, et la faille qu'elle referme.
+  assertTestDatabaseUrl(databaseUrl);
 
   // On applique les MIGRATIONS VERSIONNÉES, pas `db push` (§15.1). C'est le
   // même chemin qu'en production : les tests valident donc aussi que la suite
@@ -85,8 +84,94 @@ export async function teardown(): Promise<void> {
   // lancement, qui la vide et la reconstruit systématiquement.
 }
 
+/** Suffixe que le nom de la base DOIT porter pour être considérée comme jetable. */
+export const TEST_DATABASE_SUFFIX = "_test";
+
+/**
+ * Refuse toute URL qui ne désigne pas, de façon certaine, une base de TEST.
+ *
+ * À appeler avant CHAQUE opération destructrice, et non une seule fois en
+ * amont : c'est le seul contrôle qui empêche ce fichier de vider une base de
+ * développement ou de production. Elle renvoie le nom de base validé, pour que
+ * l'appelant puisse le journaliser sans manipuler l'URL brute.
+ *
+ * Trois refus, tous explicites et bloquants :
+ *
+ *  1. **URL absente ou vide.** Le maillon amont (`readDatabaseUrl` dans
+ *     `test-env.ts`) accepte n'importe quel `DATABASE_URL` hérité de
+ *     l'environnement, et retombe silencieusement sur `.env` — le fichier de
+ *     DÉVELOPPEMENT — s'il n'y en a pas. On ne fait donc aucune confiance à ce
+ *     qui arrive ici : une valeur absente est une erreur, jamais un défaut
+ *     implicite.
+ *
+ *  2. **URL non analysable.** Sans nom de base lisible, il est impossible de
+ *     prouver qu'on cible bien une base jetable — donc on refuse.
+ *
+ *  3. **Nom de base ne finissant pas par `_test`.** C'est le cœur du contrôle,
+ *     et la raison de cette fonction.
+ *
+ * POURQUOI ANALYSER L'URL PLUTÔT QUE LA TESTER PAR EXPRESSION RÉGULIÈRE.
+ * La version précédente de cette garde faisait `/_test(\?|$)/.test(url)` sur la
+ * chaîne ENTIÈRE. Ce test est contournable, et de façon non théorique :
+ *
+ *     postgresql://u:p@prod-host:5432/prestgo_prod?opt=/x_test
+ *
+ * Sur cette URL, `toTestUrl` (`test-env.ts`) voit un segment `/x_test` en fin
+ * de chaîne, en conclut que l'URL est « déjà transformée » et la renvoie
+ * INCHANGÉE ; puis l'ancienne garde trouvait bien `_test` en fin de chaîne et
+ * laissait passer. La base réellement ciblée était `prestgo_prod`. Le
+ * `TRUNCATE` — et, dans la branche de secours, le `DROP SCHEMA public CASCADE`
+ * — se seraient exécutés dessus. Vérifié en reproduisant les deux fonctions
+ * hors du projet avant d'écrire ce correctif.
+ *
+ * On lit donc `pathname`, c'est-à-dire ce que le driver PostgreSQL utilisera
+ * réellement comme nom de base : ni la query, ni les identifiants, ni l'hôte
+ * ne peuvent plus influencer la décision.
+ */
+export function assertTestDatabaseUrl(databaseUrl: string | undefined | null): string {
+  if (!databaseUrl || databaseUrl.trim() === "") {
+    throw new Error(
+      "Refus d'opérer : DATABASE_URL est absente ou vide. " +
+        "Aucune base n'est ciblée par défaut — définissez explicitement une base de test."
+    );
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(databaseUrl);
+  } catch {
+    throw new Error(`Refus d'opérer : DATABASE_URL n'est pas une URL analysable (${redact(databaseUrl)}).`);
+  }
+
+  // `pathname` vaut "" ou "/" quand aucune base n'est nommée.
+  const databaseName = parsed.pathname.replace(/^\//, "");
+  if (databaseName === "") {
+    throw new Error(`Refus d'opérer : aucune base nommée dans DATABASE_URL (${redact(databaseUrl)}).`);
+  }
+
+  if (!databaseName.endsWith(TEST_DATABASE_SUFFIX)) {
+    throw new Error(
+      `Refus d'opérer sur la base « ${databaseName} » : son nom ne se termine pas par ` +
+        `« ${TEST_DATABASE_SUFFIX} ». Ces opérations sont destructrices et réservées à une base de test. ` +
+        `URL : ${redact(databaseUrl)}`
+    );
+  }
+
+  return databaseName;
+}
+
+/** Masque le mot de passe avant de faire figurer une URL dans un message d'erreur. */
+function redact(url: string): string {
+  return url.replace(/:[^:@/]*@/, ":***@");
+}
+
 /** Vide toutes les tables applicatives, en conservant le schéma et l'historique de migrations. */
 async function truncateAllTables(databaseUrl: string): Promise<void> {
+  // Revérifié ICI, et pas seulement dans `setup()` : la garde doit vivre au
+  // contact de l'opération destructrice. Un futur appelant qui oublierait de
+  // vérifier en amont sera bloqué ici, pas silencieusement autorisé.
+  assertTestDatabaseUrl(databaseUrl);
+
   const prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
   try {
     const tables = await prisma.$queryRawUnsafe<{ tablename: string }[]>(
@@ -109,8 +194,16 @@ async function truncateAllTables(databaseUrl: string): Promise<void> {
   }
 }
 
-/** Repart d'un schéma `public` vide, sans passer par `prisma migrate reset` (voir note ci-dessus). */
+/**
+ * Repart d'un schéma `public` vide, sans passer par `prisma migrate reset`
+ * (voir note ci-dessus).
+ *
+ * C'est l'opération LA PLUS destructrice du fichier — plus qu'un `TRUNCATE` :
+ * elle supprime les tables elles-mêmes. Elle est gardée au même titre.
+ */
 async function dropAndRecreateSchema(databaseUrl: string): Promise<void> {
+  assertTestDatabaseUrl(databaseUrl);
+
   const prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
   try {
     await prisma.$executeRawUnsafe("DROP SCHEMA public CASCADE");
