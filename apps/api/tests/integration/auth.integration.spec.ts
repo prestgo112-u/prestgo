@@ -112,6 +112,21 @@ describe("authentification", () => {
 
       const connexion = await api(app).post("/auth/login").send({ email, password: "motdepasse1" });
       expect(connexion.status).toBe(200);
+
+      /**
+       * Écart n°1 du cahier des charges mobile : `hasClientProfile` restait
+       * `false` pour tout compte, aucune route mobile ne créant la ligne. Un
+       * compte fraîchement inscrit doit désormais l'avoir dès l'activation —
+       * `ClientProfile` est créé AVEC le compte, à `POST /auth/register`.
+       */
+      const profil = await api(app)
+        .get("/me")
+        .set("Authorization", `Bearer ${connexion.body.data.accessToken}`);
+      expect(profil.status).toBe(200);
+      expect(profil.body.data.hasClientProfile).toBe(true);
+      // Il n'est pas devenu prestataire pour autant : les deux capacités sont
+      // indépendantes.
+      expect(profil.body.data.hasProviderProfile).toBe(false);
     });
 
     it("refuse de réutiliser un code déjà consommé", async () => {

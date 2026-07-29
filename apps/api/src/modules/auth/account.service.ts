@@ -86,7 +86,17 @@ export class AccountService {
         firstName: input.firstName?.trim(),
         lastName: input.lastName?.trim(),
         passwordHash: await hashPassword(input.password),
-        status: "pending"
+        status: "pending",
+        // Écart n°1 du cahier des charges mobile : `GET /me` expose
+        // `hasClientProfile`, mais aucune route mobile ne créait cette ligne —
+        // le flag restait `false` pour tout compte, y compris un client actif
+        // de longue date. Un compte naît « client » par défaut ; devenir
+        // prestataire (POST /providers/me) ajoute une CAPACITÉ
+        // supplémentaire, elle ne remplace jamais celle-ci.
+        //
+        // Créé dans la même écriture que le compte : ainsi il n'existe aucun
+        // instant où un utilisateur existe sans son profil client.
+        clientProfile: { create: {} }
       }
     });
 
