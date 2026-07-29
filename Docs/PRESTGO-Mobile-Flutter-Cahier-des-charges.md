@@ -189,7 +189,7 @@ Champs et domaines de valeurs (source :
 | `status` | string | `draft`, `pending`, `active`, `rejected`, `suspended`, `deleted` |
 | `emailVerified` / `phoneVerified` | bool | dérivés de `emailVerifiedAt` / `phoneVerifiedAt` non nuls |
 | `roles` | string[] | codes de rôles **d'administration**. Vide pour un client et un prestataire ordinaires — vérifié sur les deux comptes démo. **Ne pas s'en servir pour aiguiller l'application.** |
-| `hasClientProfile` | bool | existence d'une ligne `client_profiles` |
+| `hasClientProfile` | bool | existence d'une ligne `client_profiles` — **créée automatiquement à `POST /auth/register`** depuis la correction du 29 juillet 2026 (voir encadré ci-dessous) |
 | `hasProviderProfile` | bool | existence d'une ligne `provider_profiles` |
 | `providerId` | string \| null | identifiant du profil prestataire, `null` sinon |
 | `providerValidationStatus` | string \| null | `profile_incomplete`, `pending_review`, `approved`, `changes_requested`, `rejected`, `suspended` |
@@ -215,25 +215,64 @@ basculement explicite (menu ou onglet). Les deux espaces coexistent, il n'y a
 pas de reconnexion. Le token est le même — le backend ne distingue pas « une
 session client » d'« une session prestataire ».
 
-> ⚠️ **Point important, vérifié en appel réel :** `hasClientProfile` vaut `false`
-> même pour le compte de démonstration client (`client.demo@prestgo.test`), et
-> **aucun endpoint public ou mobile ne crée de `ClientProfile`** — seules les
-> routes d'administration le font par `upsert`. Ce flag ne doit donc **jamais**
-> servir de condition d'accès à l'espace client. Voir §7, écart n°1.
-> **Règle applicable :** tout compte authentifié dont le `status` est `active`
-> peut utiliser l'espace client. `hasClientProfile` est ignoré par l'application.
+> ✅ **Corrigé depuis la rédaction initiale de ce document (écart n°1, clos).**
+> `POST /auth/register` crée désormais la ligne `ClientProfile` **dans la même
+> écriture** que le compte
+> ([account.service.ts](apps/api/src/modules/auth/account.service.ts)) : tout
+> compte inscrit via cette route a `hasClientProfile: true` dès son activation.
+> Vérifié par appel réel : inscription → OTP → connexion → `GET /me` renvoie
+> `hasClientProfile: true`, `hasProviderProfile: false`.
+>
+> ⚠️ **Ce flag reste néanmoins à ignorer pour l'aiguillage**, pour deux
+> raisons :
+> 1. **Comptes antérieurs à la correction** — les comptes de démonstration du
+>    seed (`client.demo@prestgo.test`, `provider.ready@prestgo.test`…) et tout
+>    compte inscrit avant le déploiement de ce correctif ont
+>    `hasClientProfile: false` et le garderont : rien ne les fait rattraper
+>    rétroactivement. La capture ci-dessus (compte prestataire démo) date
+>    d'avant la correction et reste représentative de ces comptes historiques.
+> 2. **Aucune route mobile ne crée de `ClientProfile` en dehors de
+>    l'inscription** — un compte créé par une voie différente (import,
+>    back-office) resterait à `false`.
+>
+> **Règle applicable, inchangée :** tout compte authentifié dont le `status`
+> est `active` peut utiliser l'espace client, quel que soit `hasClientProfile`.
+> Le champ est informatif, pas une condition d'accès.
 
 ### 1.4 Un mot sur la validation des formulaires
 
-Les erreurs du `ValidationPipe` NestJS remontent dans `errors[]` **sans nom de
-champ** — vérifié par appel réel (§5.1). L'application ne peut donc pas
-positionner automatiquement un message sous le bon `TextFormField` à partir de
-la réponse serveur.
+✅ **Corrigé depuis la rédaction initiale de ce document (écart n°13, clos).**
+Les erreurs du `ValidationPipe` NestJS renseignent désormais **`field`** dans
+chaque entrée de `errors[]` — l'`exceptionFactory` du pipe global reconstruit le
+chemin complet du champ fautif, y compris pour un élément d'un tableau imbriqué
+(`slots.1.startTime`, pas seulement `startTime`). Vérifié par appel réel sur
+`/auth/register`, `/me/addresses`, `/missions` et `/providers/me/availabilities`.
 
-**Conséquence opérationnelle :** la validation côté client doit être complète
-(longueurs, formats, motifs — tous repris dans ce document, endpoint par
-endpoint), et l'erreur serveur est affichée en bannière ou en `SnackBar` au
-niveau du formulaire, pas au niveau du champ. C'est un écart consigné en §7.
+```json
+{
+  "success": false,
+  "message": "Adresse email invalide",
+  "errors": [
+    { "field": "email", "code": "validation_error", "message": "Adresse email invalide" },
+    { "field": "password", "code": "validation_error", "message": "Le mot de passe doit contenir au moins 8 caractères, dont une lettre et un chiffre" }
+  ]
+}
+```
+
+**Conséquence opérationnelle, désormais possible :** le modèle Dart unique
+(§5.1) peut mapper chaque entrée de `errors[]` sur le `TextFormField`
+correspondant via `field` (`ApiException.messageForField(fieldName)`), au lieu
+de se rabattre systématiquement sur une bannière de formulaire. La validation
+côté client (longueurs, formats — toujours documentée endpoint par endpoint
+dans ce document) reste nécessaire pour le confort de saisie immédiat, mais
+n'est plus la SEULE ligne de défense contre un message mal placé.
+
+**Deux limites qui subsistent :**
+- `message` (le champ de tête) reste un texte unique — utile pour un
+  `SnackBar` global, pas pour un mapping par champ.
+- Les erreurs MÉTIER posées à la main par un service (ex. `409 Cet email ou ce
+  numéro est déjà utilisé`) n'ont toujours pas de `field` : seules les erreurs
+  du `ValidationPipe` en bénéficient. Continuer à les afficher en bannière.
 
 ---
 
@@ -900,7 +939,8 @@ Deux pièges à documenter dans l'UI :
 
 **Le bouton « Soumettre » est piloté par `canSubmit`, pas par la checklist.**
 `canSubmit` vaut `true` seulement si les cinq cases sont vertes **ET** que
-`validationStatus ∈ { profile_incomplete, changes_requested }` **ET** que
+`validationStatus ∈ { profile_incomplete, changes_requested, rejected }`
+(`rejected` inclus depuis la correction de l'écart n°8, §7) **ET** que
 `resubmissionBlocked == false`
 ([provider-self.service.ts:207](apps/api/src/modules/providers/provider-self.service.ts:207)).
 
@@ -924,7 +964,7 @@ curl -i -X POST "$API/providers/me/submit" \
 | Code | Message | Réaction de l'UI |
 |---|---|---|
 | **200** | `Dossier soumis à la vérification` | Naviguer vers P9. |
-| **400** | `Votre dossier n'est pas complet` | ⚠️ **Le détail est dans `errors[]`**, avec le champ `field` renseigné — c'est le **seul** endpoint du périmètre mobile qui fournit un mapping champ→erreur exploitable. Forme : `[{ "field": "documents", "code": "checklist_incomplete", "message": "Fournissez tous les justificatifs obligatoires" }]`. Marquer en rouge exactement les cases listées. |
+| **400** | `Votre dossier n'est pas complet` | Le détail est dans `errors[]`, avec le champ `field` renseigné. Forme : `[{ "field": "documents", "code": "checklist_incomplete", "message": "Fournissez tous les justificatifs obligatoires" }]`. Marquer en rouge exactement les cases listées. Cette erreur reste construite à la main par le service (`checklistErrors()`) — ce n'est plus, depuis la correction de l'écart n°13, le seul endpoint à fournir un `field` : toutes les erreurs de validation `class-validator` en portent un désormais (§1.4, §5.1). |
 | **400** | `Votre dossier est au statut « approved » : il n'y a rien à soumettre.` | Le statut a changé entre l'affichage et le clic. Rafraîchir `GET /providers/me`. |
 | **403** | `La re-soumission de votre dossier a été bloquée. Contactez le support.` | Correspond à `resubmissionBlocked: true`. Masquer définitivement le bouton et afficher un écran de contact support. |
 | 403 | `Ce compte n'a pas de profil prestataire` | — |
@@ -944,7 +984,7 @@ qui est le bon signal pour rafraîchir.
 |---|---|---|---|
 | `pending_review` | « Dossier en cours de vérification » | Date de soumission (`submittedAt`), rappel des 5 étapes validées | **Aucune modification de fond.** Voir le verrou ci-dessous. Seul l'interrupteur de disponibilité reste actif. |
 | `changes_requested` | « Corrections demandées » | **`rejectionReason` affiché en évidence** + checklist + statuts/motifs par document (`GET /providers/me/documents` → `current[].rejectionReason`) | **Toutes les corrections sont ouvertes** — détail ci-dessous. Bouton « Re-soumettre » actif si `canSubmit`. |
-| `rejected` | « Dossier refusé » | `rejectionReason` | Si `resubmissionBlocked == false` : mêmes corrections que `changes_requested`, **mais** `POST /providers/me/submit` renverra `400 … il n'y a rien à soumettre` car `rejected` n'est pas un statut soumissible (voir §7, écart n°8). Si `resubmissionBlocked == true` : contact support uniquement. |
+| `rejected` | « Dossier refusé » | `rejectionReason` | ✅ **Écart n°8 clos** : si `resubmissionBlocked == false`, **mêmes corrections que `changes_requested`** — bouton « Re-soumettre » actif si `canSubmit` (checklist complète). Si `resubmissionBlocked == true` : contact support uniquement, bouton absent. |
 | `approved` | « Dossier validé » | — | Bascule vers l'espace prestataire complet (§4). |
 | `suspended` | « Compte suspendu » | — | Contact support. Aucune action de gestion. |
 
@@ -991,11 +1031,11 @@ appuie sur « Re-soumettre » (`POST /providers/me/submit`).
 
 #### `POST /auth/login`
 
-Corps : `{ email, password }`. **Il n'y a pas de connexion par téléphone** :
-`LoginBodyDto.email` est décoré `@IsEmail()`
+Corps : `{ email, password }`. `LoginBodyDto.email` est décoré `@IsEmail()`
 ([dto.ts:81-88](apps/api/src/modules/auth/dto.ts:81)), et le service cherche par
-`where: { email }`. Un compte créé avec un téléphone seul **ne peut pas se
-connecter** — voir §7, écart n°2.
+`where: { email }` : **cette route reste réservée aux comptes avec email**. Un
+compte créé avec un téléphone seul se connecte par un chemin différent —
+`POST /auth/otp/verify` avec `purpose: "login"`, voir juste après.
 
 ```bash
 curl -i -X POST "$API/auth/login" \
@@ -1027,6 +1067,66 @@ avec un libellé lisible (`PRESTGO-Android/1.0.3 (Pixel 7)`) rend l'écran
 | **401** | `Invalid credentials` | ⚠️ **Message unique pour « email inconnu » et « mot de passe faux »** — volontaire. Afficher « Email ou mot de passe incorrect ». Ne jamais laisser entendre que l'email existe. Vérifié en appel réel. |
 | **401** | `Account is not active` | Compte `pending` (jamais activé), `suspended`, `rejected` ou `deleted`. **L'API ne dit pas lequel.** Recommandation : proposer les deux issues — « Vérifier mon compte » (relance `otp/send` puis écran C4) et « Contacter le support ». Vérifié en appel réel sur un compte `pending`. |
 | **429** | — | 10 tentatives/minute. Désactiver le bouton 60 s. |
+
+#### Connexion par téléphone, sans mot de passe — `POST /auth/otp/verify` (`purpose: "login"`)
+
+✅ **Ajouté depuis la rédaction initiale de ce document (écart n°2, clos).** Un
+compte inscrit avec un numéro de téléphone seul (sans email) ne pouvait
+auparavant jamais se connecter. Le motif `login` figurait déjà parmi les
+valeurs acceptées par `SendOtpBodyDto`/`VerifyOtpBodyDto`, mais aucune route ne
+l'exploitait — c'est corrigé.
+
+**Parcours, réutilisant les mêmes routes que la vérification de compte (§2.1) :**
+
+```
+POST /auth/otp/send    { "target": "+225...", "purpose": "login" }   → 200
+POST /auth/otp/verify  { "target": "+225...", "code": "…", "purpose": "login" } → 200, jetons émis
+```
+
+`POST /auth/otp/send` avec `purpose: "login"` répond **exactement comme pour
+les autres motifs** (§2.1) — aucun changement de forme, aucune indication sur
+l'existence du compte.
+
+`POST /auth/otp/verify` avec `purpose: "login"` change en revanche
+complètement de forme de réponse par rapport aux deux autres motifs : au lieu
+de `{ verified, activated }`, il renvoie **exactement la forme de
+`POST /auth/login`** — capture réelle :
+
+```json
+{
+  "success": true,
+  "message": "Authenticated",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIs…",
+    "refreshToken": "972f86cedaa8d252d2cd…"
+  }
+}
+```
+
+```bash
+curl -i -X POST "$API/auth/otp/send" \
+  -H "Content-Type: application/json" \
+  -d '{"target":"+22507052500","purpose":"login"}'
+
+curl -i -X POST "$API/auth/otp/verify" \
+  -H "Content-Type: application/json" \
+  -d '{"target":"+22507052500","code":"346826","purpose":"login"}'
+```
+
+| Code | Message serveur | Réaction de l'UI |
+|---|---|---|
+| **200** | `Authenticated` | Identique à `POST /auth/login` : stocker les deux jetons, appeler `GET /me`, enregistrer le device push (§5.3), router selon §1.3. |
+| **400** | `Code invalide ou expiré` | Même message ambigu qu'en vérification de compte (§2.1) : code faux, expiré, ou déjà utilisé. |
+| **401** | `Trop de tentatives. Demandez un nouveau code.` | Après 5 tentatives sur le même code. |
+| **401** | **`Account is not active`** | ⚠️ Spécifique à `purpose: "login"` : le code est valide, mais **aucun compte actif** ne correspond au numéro (inexistant, encore `pending`, suspendu…). Ce n'est **pas une fuite** : avoir reçu et ressaisi le bon code prouve déjà la maîtrise du téléphone — contrairement à `otp/send` ou `forgot-password`, qui eux ne doivent rien révéler. Afficher un message générique (« Connexion impossible avec ce numéro ») et proposer l'inscription. |
+| **429** | — | 30 vérifications/minute (throttle partagé avec les deux autres motifs). |
+
+⚠️ **Ne pas confondre avec la vérification de compte.** Un même numéro peut
+recevoir un OTP `phone_verification` (active le compte) et un OTP `login`
+(connecte un compte déjà actif) : ce sont deux enregistrements distincts en
+base, le `purpose` les sépare. L'écran de connexion par téléphone doit
+toujours envoyer `purpose: "login"`, jamais laisser le champ vide (qui
+retomberait sur `phone_verification`, une forme de réponse différente).
 
 #### Mot de passe oublié — **la route existe**, en deux temps
 
@@ -1680,7 +1780,7 @@ curl -s "$API/providers/search?categoryId=13cac995-0ac6-4ab4-9840-9a2969d5770c&d
 | `distanceKm` | « à 2,2 km » | **`null` si aucune géoposition n'a été envoyée.** Masquer la ligne dans ce cas. |
 | `categories` | Puces | **Tableau de chaînes** dans la recherche — mais **tableau d'objets** `{id, name, slug}` sur la fiche publique. Deux modèles Dart distincts. |
 | `startingPrice` | « à partir de 5 000 XOF » | `null` possible → masquer. |
-| `avatarFileId` | Photo via `GET /files/:id/content` | `null` → initiales. Le fichier est en visibilité `public`, mais **la route `/files/:id/content` reste protégée par `Bearer`** — sur l'écran d'accueil non connecté, l'avatar n'est donc pas récupérable. Voir §7, écart n°5. |
+| `avatarFileId` | Photo via `GET /files/:id/content` | `null` → initiales. ✅ **Écart n°5 clos** : cette route est désormais accessible **sans jeton** pour un fichier `public` (avatar, portfolio) — l'appeler avec ou sans `Authorization` fonctionne indifféremment, y compris sur l'écran d'accueil non connecté. Un fichier non public reste refusé en 403, avec ou sans jeton. |
 | `availableNow` | Pastille verte | `availabilityStatus == "available"`. Un prestataire `busy` apparaît avec `availableNow: false` mais reste réservable. |
 
 **États :** chargement → shimmer de 3 cartes ; erreur → « Réessayer » ;
@@ -1850,11 +1950,12 @@ Source : [mobile-dto.ts:22-47](apps/api/src/modules/missions/mobile-dto.ts:22).
    d'idempotence est **générée**.
 
 Le **délai minimum de réservation** est de **60 minutes** par défaut
-(`mission.min_lead_time_minutes`). Ce réglage n'étant exposé par aucune route
-mobile (§7, écart n°6), l'application ne peut pas le lire : soit elle applique
-60 min en dur avec le risque d'un décalage si l'exploitation change le réglage,
-soit elle laisse le serveur trancher et affiche le message d'erreur. **Retenu :
-bloquer côté client à 60 min ET traiter le 400 comme faisant autorité.**
+(`mission.min_lead_time_minutes`). ✅ **Écart n°6 clos : ce réglage se lit
+désormais via `GET /settings/public` → `missionMinLeadTimeMinutes`.** Appeler
+cette route au démarrage (§8) et bloquer le sélecteur sur la valeur EN
+VIGUEUR plutôt que sur 60 min codé en dur — le serveur reste de toute façon
+l'autorité finale en cas de désaccord (le message du `400` est interpolé avec
+la valeur réelle).
 
 #### `Idempotency-Key` — comment la générer et la réutiliser
 
@@ -2011,14 +2112,26 @@ l'absence de prix (afficher « — » plutôt que « 0 XOF »).
 
 | Onglet | Filtre |
 |---|---|
-| À venir | `status=pending_provider`, puis `status=confirmed` (deux appels, ou pas de filtre + tri côté client) |
+| À venir | `status=pending_provider,confirmed` |
 | En cours | `status=in_progress` |
-| Terminées | `status=completed`, `status=closed` |
+| Terminées | `status=completed,closed` |
 | Annulées | `status=cancelled` |
 
-⚠️ **`status` n'accepte qu'une seule valeur** — pas de liste. Un onglet couvrant
-plusieurs statuts impose soit plusieurs appels, soit un appel non filtré avec
-regroupement côté client. Voir §7, écart n°7.
+✅ **Écart n°7 clos : `status` accepte une liste séparée par des virgules.**
+`?status=completed,closed` renvoie l'union exacte des deux statuts, en **un
+seul appel**, avec `meta.total` qui reflète cette union — plus besoin de
+fusionner plusieurs appels ni de charger une liste non filtrée pour regrouper
+côté client. La forme scalaire (`?status=confirmed`) continue de fonctionner à
+l'identique. **Une liste contenant un seul statut inconnu est refusée en bloc**
+(400 `Statut de mission inconnu`), comme c'était déjà le cas pour une valeur
+unique invalide.
+
+```bash
+curl -s "$API/me/missions?status=completed,closed&limit=20" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+S'applique aussi à `GET /providers/me/missions` (§4.1), avec le même mécanisme.
 
 **États :** `data: []` par onglet → message spécifique (« Aucune mission à
 venir », avec bouton « Réserver une prestation » sur l'onglet À venir).
@@ -2119,9 +2232,9 @@ et marquée `late: true` — le backend explique pourquoi
 bloquer pousserait le client à ne pas prévenir du tout.
 
 → **L'UI doit avertir avant l'appel** (« Cette annulation sera enregistrée comme
-tardive »), pas après. Le seuil de 6 h n'étant pas lisible par l'API (§7, écart
-n°6), l'application l'applique en dur pour l'avertissement, et affiche le
-`message` serveur après coup, qui fait foi.
+tardive »), pas après. ✅ **Écart n°6 clos** : ce seuil se lit via
+`GET /settings/public` → `missionCancellationNoticeHours`, pour l'avertissement
+préalable ; le `message` serveur, affiché après coup, reste l'autorité finale.
 
 | Code | Message | Réaction |
 |---|---|---|
@@ -2232,7 +2345,7 @@ Source : [review-submission.service.ts:41-95](apps/api/src/modules/reviews/revie
 | Mission terminée | `mission.status` | **Oui** |
 | Je suis le client | `mission.client.id == GET /me.id` | **Oui** |
 | Avis déjà déposé | `mission.reviews.any((r) => r.authorId == monId)` | **Oui** |
-| Fenêtre de 14 jours | date de passage à `completed` via `GET /missions/:id/history` (`statusHistory` où `newStatus == "completed"`) | **Oui**, au prix d'un appel supplémentaire — la durée (14 j) reste une constante côté client (§7, écart n°6) |
+| Fenêtre de dépôt | date de passage à `completed` via `GET /missions/:id/history` (`statusHistory` où `newStatus == "completed"`) | **Oui**, au prix d'un appel supplémentaire — la durée se lit désormais via `GET /settings/public` → `reviewsWindowDays` (écart n°6 clos), plutôt qu'une constante figée à 14 jours |
 
 → **Règle d'affichage du bouton « Laisser un avis » :** statut ∈
 {`completed`, `closed`} **ET** je suis le client **ET** aucun avis de moi **ET**
@@ -2376,28 +2489,76 @@ interroger mission par mission. **Capture réelle :**
 
 `counterpartName` est déjà résolu **du bon côté** : la même route sert au client
 et au prestataire, sans logique conditionnelle dans l'application.
+`counterpartAvatarFileId` se charge via `GET /files/:id/content` — comme tout
+avatar (§3.4), cette route est accessible sans jeton pour un fichier `public`
+(écart n°5, clos).
 
-**Badge messagerie :** il n'existe **pas** de compteur global de messages non lus
-(§7, écart n°4). Somme de `unreadCount` sur la **première page** — approximation
-à assumer, ou parcours de toutes les pages si la volumétrie le permet.
+**Badge messagerie :** ✅ **écart n°4 clos.** `GET /me/threads/unread-count`
+existe désormais, sur le modèle exact de
+`GET /me/notifications/unread-count` :
+
+```bash
+curl -s "$API/me/threads/unread-count" -H "Authorization: Bearer $TOKEN"
+# { "success": true, "message": "OK", "data": { "unread": 3 } }
+```
+
+Le compte est **global, tous fils confondus**, et exclut les messages que j'ai
+moi-même envoyés (seuls ceux des autres comptent comme non lus) — exactement
+la même règle que `unreadCount` par fil dans `GET /me/threads`, dont ce nouveau
+compteur est la somme exacte. **Il n'est plus nécessaire de sommer la première
+page de `/me/threads`** : utiliser cette route pour la pastille de l'onglet
+Messagerie.
 
 #### Lire une conversation — `GET /messages/threads/:id/messages`
 
-**Non paginé** : renvoie tous les messages, **du plus ancien au plus récent**.
-Élément : `{ id, senderId, message, createdAt, readAt?, files: [ { file: { id, originalName, mimeType, size } } ] }`.
+⚠️ **PAGINÉE depuis la rédaction initiale de ce document (décision F, écart
+n°12, clos).** Cette route renvoyait auparavant **tous** les messages en un
+seul tableau, sans limite de taille ni `meta` — viable pour quelques échanges,
+plus du tout pour un fil qui s'étale sur des mois.
 
+**Ancienne forme (obsolète, à ne plus développer contre) :**
+
+```json
+{ "success": true, "message": "OK", "data": [ /* TOUS les messages du fil */ ] }
+```
+
+**Forme actuelle** — mêmes paramètres que toute autre liste de l'API
+(`page`, `limit`, `sort`, via `PaginationQueryDto`), pas un mécanisme propre à
+la messagerie :
+
+```json
+{
+  "success": true, "message": "OK",
+  "data": [ /* UNE PAGE de messages */ ],
+  "meta": { "page": 1, "limit": 20, "total": 47 }
+}
+```
+
+Élément de `data` : `{ id, senderId, message, createdAt, readAt?, files: [ { file: { id, originalName, mimeType, size } } ] }`.
 `senderId` peut être `null` (message système). `senderId == GET /me.id` distingue
 « moi » de « l'autre ».
 
+**Le tri par défaut reste `createdAt` CROISSANT** (le plus ancien d'abord) —
+c'est l'ordre qu'avait déjà cette route avant sa pagination. **La page 1
+correspond donc au DÉBUT de la conversation**, pas à ses messages les plus
+récents : un écran qui veut afficher la fin du fil en premier doit soit
+demander `?sort=-createdAt`, soit calculer la dernière page à partir de
+`meta.total` et `limit`.
+
 ```bash
-curl -s "$API/messages/threads/e6499753-89c6-4a9f-bdc9-b3ff4508be47/messages" \
+curl -s "$API/messages/threads/e6499753-89c6-4a9f-bdc9-b3ff4508be47/messages?page=1&limit=20" \
+  -H "Authorization: Bearer $TOKEN"
+
+# Les 20 plus récents, dans l'ordre chronologique inverse :
+curl -s "$API/messages/threads/e6499753-89c6-4a9f-bdc9-b3ff4508be47/messages?limit=20&sort=-createdAt" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-⚠️ **Il n'y a pas de temps réel** (ni WebSocket, ni SSE). L'écran de conversation
-doit reposer sur : chargement à l'ouverture, **pull-to-refresh**, et
-**rafraîchissement déclenché par le push `chat.message`**. Un sondage (polling)
-court est déconseillé — la route n'est pas paginée et renvoie tout le fil.
+⚠️ **Il n'y a toujours pas de temps réel** (ni WebSocket, ni SSE). L'écran de
+conversation doit reposer sur : chargement à l'ouverture, **pull-to-refresh**,
+et **rafraîchissement déclenché par le push `chat.message`**. La pagination ne
+change rien à ce point — elle borne la taille d'un appel, elle ne remplace pas
+un canal temps réel (toujours en écart, voir §7 n°12).
 
 #### Envoyer — `POST /messages/threads/:id/messages`
 
@@ -2468,9 +2629,9 @@ existantes. Trois appels suffisent.
 | Bloc | Appel | Détail |
 |---|---|---|
 | **En attente de mon action** | `GET /providers/me/missions?status=pending_provider&limit=20` | Le bloc le plus important : ce sont les demandes à accepter ou refuser. Compteur = `meta.total`. |
-| **Missions du jour** | `GET /providers/me/missions?from=2026-08-05&to=2026-08-05&limit=50` | `from` et `to` au même jour. La borne `to` est **inclusive** (le serveur ajoute un jour). Filtrer côté client sur `status ∈ {confirmed, in_progress}` — le paramètre `status` n'accepte qu'une valeur. |
+| **Missions du jour** | `GET /providers/me/missions?from=2026-08-05&to=2026-08-05&status=confirmed,in_progress&limit=50` | `from` et `to` au même jour. La borne `to` est **inclusive** (le serveur ajoute un jour). `status` accepte directement une liste depuis l'écart n°7 (clos) — plus besoin de filtrer côté client. |
 | **Notifications non lues** | `GET /me/notifications/unread-count` | Pastille. |
-| *(optionnel)* Conversations | `GET /me/threads?limit=10` | Somme des `unreadCount`. |
+| *(optionnel)* Conversations | `GET /me/threads/unread-count` | Pastille de l'onglet Messagerie — route dédiée depuis l'écart n°4 (clos), remplace la somme manuelle des `unreadCount` de `/me/threads`. |
 
 `GET /providers/me/missions` accepte exactement les mêmes paramètres que
 `GET /me/missions` (§3.7 — `status`, `from`, `to`, `page`, `limit`, `sort`) et
@@ -2630,10 +2791,15 @@ radiusKm, active, city }`). `PUT` remplace la liste (§2.2 P5).
 
 #### Disponibilités
 
-- **Agenda hebdomadaire** — `PUT /providers/me/availabilities` (§2.2 P6).
-  Pour **relire** l'agenda : `GET /providers/:id/availabilities` avec son propre
-  `providerId` (route **publique**) — il n'existe pas de `GET
-  /providers/me/availabilities`. Voir §7, écart n°11.
+- **Agenda hebdomadaire** — `PUT /providers/me/availabilities` (§2.2 P6). Pour
+  **relire** l'agenda : ✅ **`GET /providers/me/availabilities` existe
+  désormais** (écart n°11, clos) — miroir exact de ce que le `PUT` accepte, sans
+  passer par son propre `providerId` ni par la route publique
+  `GET /providers/:id/availabilities`.
+
+  ```bash
+  curl -s "$API/providers/me/availabilities" -H "Authorization: Bearer $PROVIDER_TOKEN"
+  ```
 - **Absences exceptionnelles** — `POST /providers/me/unavailabilities`
   (`{ startAt, endAt, reason? }`), `DELETE /providers/me/unavailabilities/:id`,
   et relecture via `GET /providers/:id/unavailabilities`.
@@ -2755,10 +2921,11 @@ Avant acceptation, le prestataire **refuse** ; après, il **annule**. Appeler
 prévue` (réglage `mission.start_window_minutes`, **défaut 120 min**, message
 interpolé).
 
-→ Griser « Démarrer » tant que `maintenant < scheduledAt − 120 min`, avec un
-libellé explicatif (« Disponible à partir de 12h00 »). La valeur n'étant pas
-lisible par l'API (§7, écart n°6), 120 min est une constante côté client, et le
-message serveur reste l'autorité.
+→ Griser « Démarrer » tant que `maintenant < scheduledAt − X min`, avec un
+libellé explicatif (« Disponible à partir de 12h00 »). ✅ **Écart n°6 clos** :
+`X` se lit via `GET /settings/public` → `missionStartWindowMinutes`, plutôt
+qu'une constante à 120 min figée à la compilation ; le message serveur reste
+l'autorité en cas de désaccord.
 
 **3. Annulation tardive.**
 Même mécanique que côté client (§3.7) : acceptée, marquée `late: true` sous
@@ -2766,12 +2933,14 @@ Même mécanique que côté client (§3.7) : acceptée, marquée `late: true` so
 
 **4. Il n'existe pas de route pour clore (`closed`) ni pour marquer `disputed`
 depuis l'application.** `closed` est atteint par un job planifié
-(`mission.auto_close_days`, **défaut 7 jours** après `completed`) ; `disputed`
+(`mission.auto_close_days`, **défaut 7 jours** après `completed` — lisible via
+`GET /settings/public` → `missionAutoCloseDays`, écart n°6 clos) ; `disputed`
 par l'ouverture d'un litige (§3.8) ou par le back-office. **Ne pas exposer de
 bouton pour ces transitions.**
 
 **5. Expiration automatique.** Une mission `pending_provider` non traitée expire
-au bout de `mission.pending_expiry_hours` (**défaut 24 h**) via un job, avec la
+au bout de `mission.pending_expiry_hours` (**défaut 24 h**, lisible via
+`GET /settings/public` → `missionPendingExpiryHours`) via un job, avec la
 notification `mission.expired`. → Afficher un compte à rebours sur les demandes
 en attente (« Il vous reste 6 h pour répondre »).
 
@@ -3373,10 +3542,13 @@ au réveil de l'application.
 ## 6. Annexe — Catalogue complet des endpoints consommés
 
 **Source :** document OpenAPI live (`GET /api/docs-json`) d'un serveur démarré le
-29 juillet 2026 — **155 opérations au total**, dont **68 sous `/admin/*`** et
-**87 hors `/admin/*`**. Le tableau ci-dessous reprend ces **87 opérations, sans
-exception**. La colonne « Auth » reflète la présence effective de `security` dans
-le document généré.
+29 juillet 2026, **mis à jour le même jour** après une session de correction des
+écarts détectés — **158 opérations au total**, dont **68 sous `/admin/*`** et
+**90 hors `/admin/*`** (+3 par rapport à la version initiale de ce document :
+`GET /settings/public`, `GET /me/threads/unread-count`,
+`GET /providers/me/availabilities` — voir §7). Le tableau ci-dessous reprend
+ces **90 opérations, sans exception**. La colonne « Auth » reflète la présence
+effective de `security` dans le document généré.
 
 Tous les chemins sont préfixés par `/api/v1`.
 
@@ -3384,8 +3556,8 @@ Tous les chemins sont préfixés par `/api/v1`.
 |---|---|---|---|---|---|
 | **Authentification (§2)** |
 | 1 | POST | `/auth/register` | C3 Inscription | non | — |
-| 2 | POST | `/auth/otp/send` | C4 Vérification OTP ; §3.1 changement email/tél | non | — |
-| 3 | POST | `/auth/otp/verify` | C4 Vérification OTP | non | — |
+| 2 | POST | `/auth/otp/send` | C4 Vérification OTP ; §3.1 changement email/tél ; connexion par téléphone (§2.3) | non | — |
+| 3 | POST | `/auth/otp/verify` | C4 Vérification OTP ; **connexion par téléphone si `purpose=login`** (§2.3) | non | — |
 | 4 | POST | `/auth/login` | Connexion ; C5 | non | — |
 | 5 | POST | `/auth/refresh` | Intercepteur dio (§2.3) | non | — |
 | 6 | POST | `/auth/logout` | Déconnexion | non\* | — |
@@ -3406,109 +3578,115 @@ Tous les chemins sont préfixés par `/api/v1`.
 | 18 | GET | `/me/favorites` | Mes favoris | **oui** | non |
 | 19 | POST | `/me/favorites/{providerId}` | Fiche prestataire, résultats de recherche | **oui** | — |
 | 20 | DELETE | `/me/favorites/{providerId}` | Mes favoris, fiche prestataire | **oui** | — |
+| **Réglages (§8)** |
+| 21 | GET | `/settings/public` | Aucun écran dédié — pilote des seuils affichés dans §3.6, §3.7, §3.9, §4.4 | non | non |
 | **Catalogue et recherche (§3.4, §3.5)** |
-| 21 | GET | `/categories` | Filtres de recherche ; P3 déclaration de service | non | non |
-| 22 | GET | `/zones` | P5 zones ; « Où intervenons-nous ? » | non | non |
-| 23 | GET | `/zones/nearby` | Sélection de zone par position | non | non |
-| 24 | GET | `/providers/search` | **Accueil / recherche** | non | **oui** |
-| 25 | GET | `/providers/{id}/public` | **Fiche prestataire** | non | — |
-| 26 | GET | `/providers/{id}/service-packs` | *(redondant avec la fiche publique — non consommé)* | non | non |
-| 27 | GET | `/providers/{id}/availabilities` | Relecture de **mon** agenda (§4.2) ; sinon redondant | non | non |
-| 28 | GET | `/providers/{id}/unavailabilities` | Relecture de **mes** absences (§4.2) | non | non |
-| 29 | GET | `/providers/{id}/reviews` | Fiche prestataire — tous les avis | non | **oui** (⚠️ `data` est un objet, §3.5) |
+| 22 | GET | `/categories` | Filtres de recherche ; P3 déclaration de service | non | non |
+| 23 | GET | `/zones` | P5 zones ; « Où intervenons-nous ? » | non | non |
+| 24 | GET | `/zones/nearby` | Sélection de zone par position | non | non |
+| 25 | GET | `/providers/search` | **Accueil / recherche** | non | **oui** |
+| 26 | GET | `/providers/{id}/public` | **Fiche prestataire** | non | — |
+| 27 | GET | `/providers/{id}/service-packs` | *(redondant avec la fiche publique — non consommé)* | non | non |
+| 28 | GET | `/providers/{id}/availabilities` | Fiche publique (agenda affiché) ; ne sert plus à relire son PROPRE agenda depuis l'ajout de la route n°79 | non | non |
+| 29 | GET | `/providers/{id}/unavailabilities` | Relecture de **mes** absences (§4.2) | non | non |
+| 30 | GET | `/providers/{id}/reviews` | Fiche prestataire — tous les avis | non | **oui** (forme alignée sur l'enveloppe standard depuis la correction de l'écart n°15 : `data` est un tableau) |
 | **Réservation et missions (§3.6, §3.7, §4.4)** |
-| 30 | POST | `/missions` | Confirmation de réservation | **oui** | — |
-| 31 | GET | `/me/missions` | Mes missions (client) | **oui** | **oui** |
-| 32 | GET | `/providers/me/missions` | Tableau de bord et planning (prestataire) | **oui** | **oui** |
-| 33 | GET | `/missions/{id}` | Détail de mission (2 rôles) | **oui** | — |
-| 34 | GET | `/missions/{id}/history` | Frise chronologique | **oui** | non |
-| 35 | POST | `/missions/{id}/accept` | Détail — prestataire | **oui** | — |
-| 36 | POST | `/missions/{id}/refuse` | Détail — prestataire | **oui** | — |
-| 37 | POST | `/missions/{id}/start` | Détail — prestataire | **oui** | — |
-| 38 | POST | `/missions/{id}/complete` | Détail — prestataire | **oui** | — |
-| 39 | POST | `/missions/{id}/cancel` | Détail — **2 rôles** | **oui** | — |
+| 31 | POST | `/missions` | Confirmation de réservation | **oui** | — |
+| 32 | GET | `/me/missions` | Mes missions (client) | **oui** | **oui** |
+| 33 | GET | `/providers/me/missions` | Tableau de bord et planning (prestataire) | **oui** | **oui** |
+| 34 | GET | `/missions/{id}` | Détail de mission (2 rôles) | **oui** | — |
+| 35 | GET | `/missions/{id}/history` | Frise chronologique | **oui** | non |
+| 36 | POST | `/missions/{id}/accept` | Détail — prestataire | **oui** | — |
+| 37 | POST | `/missions/{id}/refuse` | Détail — prestataire | **oui** | — |
+| 38 | POST | `/missions/{id}/start` | Détail — prestataire | **oui** | — |
+| 39 | POST | `/missions/{id}/complete` | Détail — prestataire | **oui** | — |
+| 40 | POST | `/missions/{id}/cancel` | Détail — **2 rôles** | **oui** | — |
 | **Reprogrammation (§3.7, §4.5)** |
-| 40 | GET | `/missions/{id}/reschedules` | Détail — onglet Reports | **oui** | non |
-| 41 | POST | `/missions/{id}/reschedule` | Proposer un report — 2 rôles | **oui** | — |
-| 42 | POST | `/missions/{id}/reschedule/{rid}/accept` | Répondre à un report — 2 rôles | **oui** | — |
-| 43 | POST | `/missions/{id}/reschedule/{rid}/reject` | Répondre à un report — 2 rôles | **oui** | — |
+| 41 | GET | `/missions/{id}/reschedules` | Détail — onglet Reports | **oui** | non |
+| 42 | POST | `/missions/{id}/reschedule` | Proposer un report — 2 rôles | **oui** | — |
+| 43 | POST | `/missions/{id}/reschedule/{rid}/accept` | Répondre à un report — 2 rôles | **oui** | — |
+| 44 | POST | `/missions/{id}/reschedule/{rid}/reject` | Répondre à un report — 2 rôles | **oui** | — |
 | **Avis (§3.9)** |
-| 44 | POST | `/missions/{id}/review` | Dépôt d'avis (**client seul**) | **oui** | — |
-| 45 | GET | `/me/reviews` | Mes avis | **oui** | **oui** |
-| 46 | POST | `/reviews/{id}/report` | Signaler un avis | **oui** | — |
+| 45 | POST | `/missions/{id}/review` | Dépôt d'avis (**client seul**) | **oui** | — |
+| 46 | GET | `/me/reviews` | Mes avis | **oui** | **oui** |
+| 47 | POST | `/reviews/{id}/report` | Signaler un avis | **oui** | — |
 | **Messagerie (§3.11)** |
-| 47 | GET | `/me/threads` | Onglet Messagerie | **oui** | **oui** |
-| 48 | GET | `/missions/{id}/thread` | Détail de mission → conversation | **oui** | — |
-| 49 | GET | `/messages/threads/{id}/messages` | Conversation | **oui** | non |
-| 50 | POST | `/messages/threads/{id}/messages` | Conversation — envoi | **oui** | — |
-| 51 | PATCH | `/messages/threads/{id}/read` | Conversation — ouverture | **oui** | — |
+| 48 | GET | `/me/threads` | Onglet Messagerie | **oui** | **oui** |
+| 49 | GET | `/me/threads/unread-count` | Badge de l'onglet Messagerie | **oui** | — |
+| 50 | GET | `/missions/{id}/thread` | Détail de mission → conversation | **oui** | — |
+| 51 | GET | `/messages/threads/{id}/messages` | Conversation | **oui** | **oui** (paginée depuis la correction de l'écart n°12 — voir la note « ancien vs nouveau format » en §3.11) |
+| 52 | POST | `/messages/threads/{id}/messages` | Conversation — envoi | **oui** | — |
+| 53 | PATCH | `/messages/threads/{id}/read` | Conversation — ouverture | **oui** | — |
 | **Notifications et appareils (§3.10, §5.3)** |
-| 52 | GET | `/me/notifications` | Centre de notifications | **oui** | **oui** |
-| 53 | GET | `/me/notifications/unread-count` | Badge (accueil, onglets) | **oui** | — |
-| 54 | PATCH | `/me/notifications/{id}/read` | Centre de notifications | **oui** | — |
-| 55 | POST | `/me/notifications/read-all` | Centre de notifications | **oui** | — |
-| 56 | GET | `/me/devices` | Réglages — appareils connectés | **oui** | non |
-| 57 | POST | `/me/devices` | Démarrage, connexion, `onTokenRefresh` | **oui** | — |
-| 58 | DELETE | `/me/devices/{token}` | Avant déconnexion, `onTokenRefresh` | **oui** | — |
+| 54 | GET | `/me/notifications` | Centre de notifications | **oui** | **oui** |
+| 55 | GET | `/me/notifications/unread-count` | Badge (accueil, onglets) | **oui** | — |
+| 56 | PATCH | `/me/notifications/{id}/read` | Centre de notifications | **oui** | — |
+| 57 | POST | `/me/notifications/read-all` | Centre de notifications | **oui** | — |
+| 58 | GET | `/me/devices` | Réglages — appareils connectés | **oui** | non |
+| 59 | POST | `/me/devices` | Démarrage, connexion, `onTokenRefresh` | **oui** | — |
+| 60 | DELETE | `/me/devices/{token}` | Avant déconnexion, `onTokenRefresh` | **oui** | — |
 | **Fichiers (§2.2 P7, §3.11, §4.2, §4.3)** |
-| 59 | POST | `/files/upload` | Justificatifs, avatar, portfolio, pièces jointes | **oui** | — |
-| 60 | GET | `/files/{id}` | Métadonnées (taille, type) | **oui** | — |
-| 61 | GET | `/files/{id}/content` | Affichage image / aperçu justificatif | **oui** | — |
-| 62 | DELETE | `/files/{id}` | Retirer un fichier envoyé par erreur | **oui** | — |
+| 61 | POST | `/files/upload` | Justificatifs, avatar, portfolio, pièces jointes | **oui** | — |
+| 62 | GET | `/files/{id}` | Métadonnées (taille, type) | **oui** | — |
+| 63 | GET | `/files/{id}/content` | Affichage image / aperçu justificatif | **non si `visibility=public`, oui sinon** (écart n°5 clos) | — |
+| 64 | DELETE | `/files/{id}` | Retirer un fichier envoyé par erreur | **oui** | — |
 | **Espace prestataire — profil et dossier (§2.2, §4.2)** |
-| 63 | POST | `/providers/me` | P2 Création du profil prestataire | **oui** | — |
-| 64 | GET | `/providers/me` | P8 Checklist ; P9 Suivi ; Profil prestataire | **oui** | — |
-| 65 | PATCH | `/providers/me` | Profil prestataire ; interrupteur de disponibilité | **oui** | — |
-| 66 | POST | `/providers/me/submit` | P8 Soumettre le dossier | **oui** | — |
+| 65 | POST | `/providers/me` | P2 Création du profil prestataire | **oui** | — |
+| 66 | GET | `/providers/me` | P8 Checklist ; P9 Suivi ; Profil prestataire | **oui** | — |
+| 67 | PATCH | `/providers/me` | Profil prestataire ; interrupteur de disponibilité | **oui** | — |
+| 68 | POST | `/providers/me/submit` | P8 Soumettre le dossier — désormais accessible aussi depuis `rejected` si `resubmissionBlocked` est faux (écart n°8 clos) | **oui** | — |
 | **Espace prestataire — offre (§2.2 P3/P4, §4.2)** |
-| 67 | GET | `/providers/me/services` | Mes prestations | **oui** | non |
-| 68 | POST | `/providers/me/services` | P3 Déclarer un service | **oui** | — |
-| 69 | PATCH | `/providers/me/services/{id}` | Modifier / désactiver un service | **oui** | — |
-| 70 | POST | `/providers/me/service-packs` | P4 Créer une formule | **oui** | — |
-| 71 | PATCH | `/providers/me/service-packs/{id}` | Modifier / désactiver une formule | **oui** | — |
-| 72 | GET | `/providers/me/service-packs/{packId}/options` | Options d'une formule | **oui** | non |
-| 73 | POST | `/providers/me/service-packs/{packId}/options` | P4b Ajouter une option | **oui** | — |
-| 74 | PATCH | `/providers/me/service-pack-options/{id}` | Modifier / désactiver une option | **oui** | — |
+| 69 | GET | `/providers/me/services` | Mes prestations | **oui** | non |
+| 70 | POST | `/providers/me/services` | P3 Déclarer un service | **oui** | — |
+| 71 | PATCH | `/providers/me/services/{id}` | Modifier / désactiver un service | **oui** | — |
+| 72 | POST | `/providers/me/service-packs` | P4 Créer une formule | **oui** | — |
+| 73 | PATCH | `/providers/me/service-packs/{id}` | Modifier / désactiver une formule | **oui** | — |
+| 74 | GET | `/providers/me/service-packs/{packId}/options` | Options d'une formule | **oui** | non |
+| 75 | POST | `/providers/me/service-packs/{packId}/options` | P4b Ajouter une option | **oui** | — |
+| 76 | PATCH | `/providers/me/service-pack-options/{id}` | Modifier / désactiver une option | **oui** | — |
 | **Espace prestataire — zones et agenda (§2.2 P5/P6, §4.2)** |
-| 75 | GET | `/providers/me/zones` | Mes zones | **oui** | non |
-| 76 | PUT | `/providers/me/zones` | P5 Zones d'intervention | **oui** | — |
-| 77 | PUT | `/providers/me/availabilities` | P6 Disponibilités hebdomadaires | **oui** | — |
-| 78 | POST | `/providers/me/unavailabilities` | Déclarer une absence | **oui** | — |
-| 79 | DELETE | `/providers/me/unavailabilities/{id}` | Supprimer une absence | **oui** | — |
+| 77 | GET | `/providers/me/zones` | Mes zones | **oui** | non |
+| 78 | PUT | `/providers/me/zones` | P5 Zones d'intervention | **oui** | — |
+| 79 | GET | `/providers/me/availabilities` | Relecture de mon agenda hebdomadaire (§4.2) — route ajoutée, écart n°11 clos | **oui** | non |
+| 80 | PUT | `/providers/me/availabilities` | P6 Disponibilités hebdomadaires | **oui** | — |
+| 81 | POST | `/providers/me/unavailabilities` | Déclarer une absence | **oui** | — |
+| 82 | DELETE | `/providers/me/unavailabilities/{id}` | Supprimer une absence | **oui** | — |
 | **Espace prestataire — justificatifs (§2.2 P7, §4.6)** |
-| 80 | GET | `/providers/me/documents` | P7 / Documents de vérification | **oui** | — |
-| 81 | POST | `/providers/me/documents` | P7 Déposer / redéposer un justificatif | **oui** | — |
+| 83 | GET | `/providers/me/documents` | P7 / Documents de vérification | **oui** | — |
+| 84 | POST | `/providers/me/documents` | P7 Déposer / redéposer un justificatif | **oui** | — |
 | **Espace prestataire — portfolio (§4.3)** |
-| 82 | GET | `/providers/me/portfolio` | Mon portfolio | **oui** | non |
-| 83 | POST | `/providers/me/portfolio` | Ajouter une réalisation | **oui** | — |
-| 84 | PATCH | `/providers/me/portfolio/{id}` | Modifier une réalisation | **oui** | — |
-| 85 | DELETE | `/providers/me/portfolio/{id}` | Retirer une réalisation | **oui** | — |
+| 85 | GET | `/providers/me/portfolio` | Mon portfolio | **oui** | non |
+| 86 | POST | `/providers/me/portfolio` | Ajouter une réalisation | **oui** | — |
+| 87 | PATCH | `/providers/me/portfolio/{id}` | Modifier une réalisation | **oui** | — |
+| 88 | DELETE | `/providers/me/portfolio/{id}` | Retirer une réalisation | **oui** | — |
 | **Litiges (§3.8)** |
-| 86 | POST | `/disputes` | Ouvrir un litige — 2 rôles | **oui** | — |
-| 87 | GET | `/disputes/{id}` | Suivi du litige — 2 rôles | **oui** | — |
+| 89 | POST | `/disputes` | Ouvrir un litige — 2 rôles | **oui** | — |
+| 90 | GET | `/disputes/{id}` | Suivi du litige — 2 rôles | **oui** | — |
 
 \* **`POST /auth/logout`** est déclaré `@Public()` (le décorateur porte sur tout
 le contrôleur `auth`), donc sans `security` dans OpenAPI. Il **lit néanmoins**
 l'en-tête `Authorization` s'il est fourni. **Envoyer le `Bearer` et le
 `refreshToken`** pour que la bonne session soit fermée (§2.4).
 
-**Vérification du décompte :** les 87 lignes numérotées ci-dessus couvrent
-l'intégralité des opérations non-`/admin/*` du document OpenAPI. Une seule est
-listée sans être consommée par l'application (**n°26**,
+**Vérification du décompte :** les 90 lignes numérotées ci-dessus couvrent
+l'intégralité des opérations non-`/admin/*` du document OpenAPI, régénéré et
+comparé exhaustivement au code après la session de correction des écarts.
+Une seule est listée sans être consommée par l'application (**n°27**,
 `GET /providers/{id}/service-packs`, redondante avec la fiche publique) — elle
 figure dans le tableau par exhaustivité.
 
 **Routes non consommées par le mobile :** les **68 opérations sous `/admin/*`**
 (back-office : validation des prestataires, modération, exports, réglages,
-rôles, audit, supervision des missions et des litiges).
+rôles, audit, supervision des missions et des litiges) — **inchangées** par la
+session de correction : aucun écart traité ne portait sur le périmètre admin.
 
 ### Endpoints par rôle — synthèse qualitative
 
 | Portée | Routes concernées |
 |---|---|
 | **Client seul** | `POST /missions`, `GET /me/missions`, `POST /missions/:id/review`, `/me/favorites/*`, `/me/addresses/*` (le carnet ne sert qu'à la réservation) |
-| **Prestataire seul** | tout `/providers/me/*`, plus `POST /missions/:id/accept`, `/refuse`, `/start`, `/complete` |
-| **Les deux rôles** | `/auth/*`, `GET`/`PATCH`/`DELETE /me`, `POST /me/password`, `/me/notifications/*`, `/me/devices/*`, `/me/threads`, `/messages/*`, `GET /missions/:id` et `/history`, `POST /missions/:id/cancel`, toutes les routes de reprogrammation, `/disputes/*`, `/files/*`, et la recherche publique |
+| **Prestataire seul** | tout `/providers/me/*` (y compris désormais `GET /providers/me/availabilities`), plus `POST /missions/:id/accept`, `/refuse`, `/start`, `/complete` |
+| **Les deux rôles** | `/auth/*` (y compris la connexion par téléphone), `GET`/`PATCH`/`DELETE /me`, `POST /me/password`, `/me/notifications/*`, `/me/devices/*`, `/me/threads/*`, `/messages/*`, `GET /missions/:id` et `/history`, `POST /missions/:id/cancel`, toutes les routes de reprogrammation, `/disputes/*`, `/files/*`, la recherche publique, et `/settings/public` |
 
 Cette répartition explique le découpage de dossiers du §1.2 : le tiers « les deux
 rôles » constitue le socle partagé (`core/` + `features/auth` +
@@ -3522,107 +3700,135 @@ Chaque écart ci-dessous a été **constaté dans le code ou par appel réel**, 
 concerne un besoin d'écran mobile identifié dans ce document. Aucun n'a été
 comblé par une invention d'API.
 
+**Mise à jour du 29 juillet 2026 (session de correction) :** 12 des 16 écarts
+sont désormais **CLOS**, 1 est **VOLONTAIREMENT NON CORRIGÉ** par décision
+produit explicite (n°14, devise), 2 restent des limitations de conception
+assumées avec un contournement jugé suffisant (n°9 partiellement, n°10), et
+1 reste **À REPORTER** faute d'une information qui ne dépend pas du code
+(n°3, nom de domaine). Le statut de chacun est indiqué entre crochets dans
+son titre ; les routes ajoutées ou corrigées ont été vérifiées par un test
+automatisé et par un appel réel avant la clôture.
+
 ---
 
 **Écart n°1 — `hasClientProfile` est inexploitable : aucune route mobile ne crée
-de `ClientProfile`.** *(bloquant pour la logique de rôle — contourné)*
+de `ClientProfile`.** **[CLOS]**
 
-Constat : `GET /me` expose `hasClientProfile`, mais une recherche exhaustive
-(`grep clientProfile`) montre que seules `clients.service.ts` et
-`users.service.ts` — **routes d'administration** — créent la ligne, par `upsert`.
-Ni `POST /auth/register` ni aucune route `/me` ne le fait. **Vérifié en appel
-réel :** `hasClientProfile == false` pour `client.demo@prestgo.test` **et** pour
-`provider.ready@prestgo.test`.
+Constat d'origine : `GET /me` expose `hasClientProfile`, mais une recherche
+exhaustive (`grep clientProfile`) montrait que seules `clients.service.ts` et
+`users.service.ts` — **routes d'administration** — créaient la ligne, par
+`upsert`. Ni `POST /auth/register` ni aucune route `/me` ne le faisait.
+**Vérifié en appel réel à l'époque :** `hasClientProfile == false` pour
+`client.demo@prestgo.test` **et** pour `provider.ready@prestgo.test`.
 
-Impact : ce flag ne peut pas servir de condition d'accès à l'espace client.
+**Correction appliquée :** `POST /auth/register` crée désormais le
+`ClientProfile` **dans la même écriture** que le compte (nested create
+Prisma). Tout compte inscrit via cette route a `hasClientProfile: true` dès son
+activation. Vérifié par un test de bout en bout (inscription → OTP →
+connexion → `GET /me`) et par appel réel.
 
-Contournement retenu (§1.3) : tout compte `active` accède à l'espace client ;
-`hasClientProfile` est **ignoré** par l'application.
-
-Demande backend : soit créer le `ClientProfile` à l'inscription, soit retirer le
-champ de `GET /me` — le laisser tel quel invite à un bug futur.
+⚠️ **Point d'attention qui subsiste, pas un écart :** les comptes créés
+**avant** cette correction (tous les comptes de démonstration du seed compris)
+gardent `hasClientProfile: false` — rien ne les rattrape rétroactivement.
+**Règle applicable, voir §1.3 : `hasClientProfile` reste ignoré pour
+l'aiguillage** ; c'est `status == "active"` qui conditionne l'accès à l'espace
+client, pour rester valable sur les comptes historiques comme sur les
+nouveaux.
 
 ---
 
 **Écart n°2 — connexion par téléphone impossible, alors que l'inscription par
-téléphone seul est autorisée.** *(bloquant pour un parcours réel — à arbitrer)*
+téléphone seul est autorisée.** **[CLOS]**
 
-Constat : `RegisterBodyDto` accepte un compte avec `phone` seul et sans `email`
-(la règle « au moins l'un des deux » est vérifiée dans le service). Mais
-`LoginBodyDto.email` est décoré `@IsEmail()` et `AuthService.login` cherche par
-`where: { email }`. Un compte créé avec un téléphone seul **ne peut jamais se
-connecter**. Le motif OTP `login` existe pourtant dans la liste des `OTP_PURPOSES`
-— l'intention est là, la route ne l'est pas.
+Constat d'origine : `RegisterBodyDto` acceptait un compte avec `phone` seul et
+sans `email`. Mais `LoginBodyDto.email` est décoré `@IsEmail()` et
+`AuthService.login` cherchait par `where: { email }` : un compte créé avec un
+téléphone seul ne pouvait jamais se connecter. Le motif OTP `login` existait
+pourtant dans `OTP_PURPOSES` — l'intention était là, la route non.
 
-Impact : sur un marché où le téléphone est le premier identifiant, c'est un
-parcours d'inscription qui mène à un cul-de-sac.
-
-Contournement V1 : **rendre l'email obligatoire dans le formulaire d'inscription
-mobile**, le téléphone restant facultatif.
-
-Demande backend : soit une connexion par OTP (`purpose: "login"` déjà prévu),
-soit accepter le téléphone dans `LoginBodyDto`.
+**Correction appliquée, décision produit :** implémentée via l'OTP existant
+(pas en ajoutant le téléphone à `LoginBodyDto`). Voir §2.3 pour le parcours
+complet : `POST /auth/otp/send` avec `purpose: "login"`, puis
+`POST /auth/otp/verify` avec le même `purpose` renvoie directement un couple
+de jetons — la forme exacte de `POST /auth/login` — sans mot de passe. Un code
+valide sans compte actif correspondant renvoie `401 Account is not active`
+(ce n'est pas une fuite : le code déjà vérifié prouve la maîtrise du
+téléphone). Testé de bout en bout par appel réel et par suite automatisée.
 
 ---
 
 **Écart n°3 — pas de lien profond pour la réinitialisation de mot de passe.**
-*(contourné)*
+**[À REPORTER — décision produit en attente]**
 
-Constat : `forgotPassword` envoie un email contenant le jeton **en clair dans le
-texte**, sans URL construite. Aucun `APP_DEEP_LINK_BASE` ni équivalent dans la
-configuration.
+Constat, inchangé : `forgotPassword` envoie un email contenant le jeton **en
+clair dans le texte**, sans URL construite. Aucun `APP_DEEP_LINK_BASE` ni
+équivalent dans la configuration.
 
-Contournement (§2.3) : écran de **saisie / collage manuel** du jeton
-(64 caractères hexadécimaux). Prévoir un champ large et un bouton « Coller ».
+**Pourquoi ce n'est pas corrigé :** construire un lien profond exige un nom de
+domaine et une configuration App Links (Android, fichier
+`assetlinks.json`) / Universal Links (iOS, fichier
+`apple-app-site-association`) **arrêtés**, ce qui n'est pas encore le cas au
+29 juillet 2026. Coder une URL provisoire serait pire que le contournement
+actuel : un lien qui pointe vers un domaine qui changera cassera silencieusement
+au premier redéploiement.
 
-Demande backend : construire une URL de type
-`https://app.prestgo.ci/reset?token=…` et l'inclure dans le corps de l'email,
-pour permettre un `App Link` / `Universal Link`.
+Contournement actuel, INCHANGÉ (§2.3) : écran de **saisie / collage manuel** du
+jeton (64 caractères hexadécimaux). Prévoir un champ large et un bouton
+« Coller ».
+
+**Ce qu'il faudra faire dès que le domaine sera choisi** (à charge du backend,
+consigné ici pour ne pas le perdre) :
+1. Construire l'URL envoyée dans l'email de `forgotPassword` sous la forme
+   `https://<domaine-choisi>/reset?token=<token>` (le jeton hexadécimal actuel,
+   inchangé).
+2. Déclarer `assetlinks.json` / `apple-app-site-association` sur ce domaine,
+   pointant vers l'application.
+3. Câbler la route `go_router` correspondante côté Flutter pour intercepter ce
+   lien et pré-remplir l'écran de réinitialisation avec le `token` extrait de
+   l'URL — l'écran de saisie manuelle resterait un repli valable (lien non
+   cliqué, copié à la main) plutôt que d'être retiré.
 
 ---
 
-**Écart n°4 — pas de compteur global de messages non lus.** *(contourné)*
+**Écart n°4 — pas de compteur global de messages non lus.** **[CLOS]**
 
-Constat : `GET /me/notifications/unread-count` existe pour les notifications ;
-il n'y a **pas** d'équivalent pour la messagerie. Le seul compteur est
-`unreadCount` **par fil**, dans `GET /me/threads`.
+Constat d'origine : `GET /me/notifications/unread-count` existait pour les
+notifications ; il n'y avait pas d'équivalent pour la messagerie. Le seul
+compteur était `unreadCount` **par fil**, dans `GET /me/threads`.
 
-Contournement (§3.11) : somme des `unreadCount` de la **première page** de
-`/me/threads`. Approximation acceptable tant qu'un utilisateur a moins de
-20 conversations actives.
-
-Demande backend : `GET /me/threads/unread-count`, sur le modèle exact de celui
-des notifications.
+**Correction appliquée :** `GET /me/threads/unread-count` existe désormais, sur
+le modèle exact de celui des notifications — `{ unread: number }`, compteur
+global tous fils confondus, excluant mes propres messages. Vérifié par test
+automatisé (coïncide exactement avec la somme des `unreadCount` par fil) et par
+appel réel. Voir §3.11 et §4.1.
 
 ---
 
 **Écart n°5 — les avatars ne sont pas affichables sur l'accueil non connecté.**
-*(à arbitrer)*
+**[CLOS]**
 
-Constat : `GET /providers/search` et `GET /providers/:id/public` sont **publics**
-et renvoient `avatarFileId`. Mais `GET /files/:id/content` est **protégée par
-`Bearer`** — le contrôleur `files` est `@ApiBearerAuth()` sans `@Public()`. La
-politique d'accès `canAccessFile` autorise bien la visibilité `public`, mais la
-garde d'authentification s'applique **avant**.
+Constat d'origine : `GET /providers/search` et `GET /providers/:id/public` sont
+**publics** et renvoient `avatarFileId`. Mais `GET /files/:id/content` était
+**protégée par `Bearer`** — la politique d'accès `canAccessFile` autorisait
+bien la visibilité `public`, mais la garde d'authentification s'appliquait
+**avant** elle.
 
-Impact : sur l'écran d'accueil consulté sans compte, aucune photo de prestataire
-ni aucune image de portfolio ne se charge.
-
-Contournement V1 : initiales sur fond coloré tant que l'utilisateur n'est pas
-connecté ; images réelles après connexion.
-
-Demande backend : rendre `GET /files/:id/content` accessible sans jeton
-**lorsque** `visibility == "public"` (la politique d'accès le permet déjà, il ne
-manque que le `@Public()` et un aiguillage).
+**Correction appliquée :** `GET /files/:id/content` est désormais accessible
+**sans jeton** pour un fichier `public` (avatar, portfolio) ; un fichier
+`restricted`/`sensitive` reste refusé en 403, avec ou sans jeton — la politique
+d'accès reste seule juge, seule la garde en amont a été ouverte. Un jeton
+invalide ou expiré est traité comme anonyme (pas de 401), pour ne pas casser
+l'affichage d'un avatar en cours de défilement. `GET /files/:id` (métadonnées)
+reste protégée. Vérifié par test automatisé et par appel réel. Voir §3.4,
+§3.11.
 
 ---
 
 **Écart n°6 — les réglages métier ne sont lisibles par aucune route mobile.**
-*(contourné, avec risque de divergence)*
+**[CLOS]**
 
-Constat : six valeurs pilotent des règles visibles par l'utilisateur, toutes
-stockées dans `system_settings` et lisibles **uniquement** par
-`/admin/settings` :
+Constat d'origine : six valeurs pilotant des règles visibles par l'utilisateur
+n'étaient lisibles que par `/admin/settings` :
 
 | Réglage | Défaut | Où l'utilisateur le ressent |
 |---|---|---|
@@ -3633,183 +3839,216 @@ stockées dans `system_settings` et lisibles **uniquement** par
 | `mission.auto_close_days` | 7 | Clôture automatique |
 | `reviews.window_days` | 14 | Fenêtre de dépôt d'avis (§3.9) |
 
-Impact : l'application doit **coder ces valeurs en dur** pour griser un bouton ou
-afficher un compte à rebours. Si l'exploitation modifie un réglage, l'interface
-ment jusqu'à la prochaine livraison. (`provider.required_document_types`, lui,
-**est** exposé via `GET /providers/me` — c'est le bon modèle.)
-
-Contournement retenu : valeurs par défaut en dur **et** message serveur
-faisant autorité en cas de refus (les messages sont interpolés avec la valeur
-réelle).
-
-Demande backend : `GET /settings/public` renvoyant ces six clés, sans
-authentification.
+**Correction appliquée :** `GET /settings/public` (route publique, sans jeton)
+expose exactement ces six clés — une liste FERMÉE, pas un miroir de la table
+complète des réglages. Une modification faite dans le back-office ressort
+immédiatement (le cache serveur est invalidé à l'écriture). Vérifié par test
+automatisé et par appel réel. Voir §8 pour la recommandation d'usage côté
+Flutter (appel au démarrage, cache, constantes en repli).
 
 ---
 
 **Écart n°7 — `status` n'accepte qu'une seule valeur sur les listes de
-missions.** *(contourné)*
+missions.** **[CLOS]**
 
-Constat : `MyMissionsQueryDto.status` est un `@IsEnum(MissionStatus)` scalaire.
-Un onglet « Terminées » couvrant `completed` **et** `closed`, ou « À venir »
-couvrant `pending_provider` **et** `confirmed`, ne peut pas s'exprimer en un
-appel.
+Constat d'origine : `MyMissionsQueryDto.status` était un
+`@IsEnum(MissionStatus)` scalaire. Un onglet « Terminées » couvrant
+`completed` **et** `closed` ne pouvait pas s'exprimer en un appel.
 
-Contournement (§3.7) : soit deux appels fusionnés côté client, soit un appel
-non filtré paginé avec regroupement local. **Recommandé : appel non filtré**,
-pour ne pas doubler la charge réseau ni compliquer la pagination.
-
-Demande backend : accepter `?status=completed,closed` (liste séparée par des
-virgules).
+**Correction appliquée :** `?status=completed,closed` (liste séparée par des
+virgules) construit un filtre `IN` et renvoie l'union exacte, en un seul
+appel, avec `meta.total` qui reflète cette union. La forme scalaire
+(`?status=confirmed`) continue de fonctionner à l'identique. Une liste
+contenant un seul statut inconnu est refusée en bloc, comme avant pour une
+valeur unique invalide. S'applique à `GET /me/missions` **et**
+`GET /providers/me/missions`. Vérifié par test automatisé (comparaison contre
+l'union de deux appels simples) et par appel réel.
 
 ---
 
 **Écart n°8 — un dossier `rejected` ne peut pas être re-soumis, alors que l'UI
-suggère le contraire.** *(à arbitrer)*
+suggère le contraire.** **[CLOS]**
 
-Constat : `POST /providers/me/submit` n'autorise que `profile_incomplete` et
-`changes_requested`. Un dossier `rejected` avec `resubmissionBlocked == false`
-renvoie donc `400 Votre dossier est au statut « rejected » : il n'y a rien à
-soumettre.` — alors que `resubmissionBlocked: false` laisse entendre qu'une
-re-soumission est possible.
+Constat d'origine : `POST /providers/me/submit` n'autorisait que
+`profile_incomplete` et `changes_requested`. Un dossier `rejected` avec
+`resubmissionBlocked == false` renvoyait `400 … il n'y a rien à soumettre` —
+alors que `resubmissionBlocked: false` laissait entendre le contraire.
 
-Impact : sur l'écran P9 en `rejected`, l'application ne peut proposer aucune
-action utile, et le drapeau `resubmissionBlocked` perd son sens.
-
-Contournement (§2.2 P9) : en `rejected`, afficher le motif et **ne proposer que
-le contact support**, sans bouton « Re-soumettre », quel que soit
-`resubmissionBlocked`.
-
-Demande backend : trancher — soit `rejected` devient soumissible quand
-`resubmissionBlocked == false`, soit le champ est masqué dans ce cas.
+**Correction appliquée, décision produit :** `rejected` rejoint
+`profile_incomplete` et `changes_requested` dans les statuts soumissibles.
+C'est fidèle à la garde déjà existante, pas une nouvelle règle : seul
+`resubmissionBlocked` doit fermer la porte, jamais le statut `rejected`
+lui-même. Testé de bout en bout : dossier complet rejeté avec
+`resubmissionBlocked: false` → `canSubmit: true`, re-soumission acceptée
+(retour à `pending_review`) ; même dossier avec `resubmissionBlocked: true` →
+`canSubmit: false`, re-soumission refusée (403, message inchangé). Voir §2.2 P9.
 
 ---
 
 **Écart n°9 — pas de suppression pour plusieurs ressources créées par
-l'utilisateur.** *(contourné)*
+l'utilisateur.** **[VOLONTAIRE / PARTIELLEMENT CLOS]**
 
-| Ressource | Suppression | Contournement |
+| Ressource | Suppression | Statut |
 |---|---|---|
-| Service prestataire | ❌ | `PATCH … { active: false }` |
-| Formule | ❌ | `PATCH … { active: false }` |
-| Option de formule | ❌ | `PATCH … { active: false }` |
-| Justificatif déposé | ❌ | Redéposer une nouvelle version |
-| Avis déposé | ❌ (ni modification) | — |
-| Notification | ❌ | Marquage lu seulement |
+| Service prestataire | ❌ | Limitation assumée — `PATCH … { active: false }` |
+| Formule | ❌ | Limitation assumée — `PATCH … { active: false }` |
+| Option de formule | ❌ | Limitation assumée — `PATCH … { active: false }` |
+| Justificatif déposé | ❌ | Limitation assumée — redéposer une nouvelle version |
+| Avis déposé | ❌ | **Décision produit confirmée : NE PAS ouvrir de route de modification** |
+| Notification | ❌ | Limitation assumée — marquage lu seulement |
 
-Impact : le vocabulaire de l'interface doit dire « Désactiver », jamais
-« Supprimer », et prévenir l'effet de bord (§4.2 : désactiver toutes ses formules
-fait disparaître le prestataire de la recherche).
+**Décision produit sur la modification d'un avis (partie la plus concrète de
+cet écart) : NON, aucune route n'est ajoutée.** Vérification technique faite en
+conséquence : **aucune route ne supprime jamais réellement un avis**, ni côté
+prestataire ni côté back-office — `PATCH /admin/reviews/:id/status` change
+seulement le `status` (`hidden`/`rejected`), il ne retire jamais la ligne. La
+question « la contrainte unique `(missionId, authorId)` empêcherait-elle un
+redépôt après une suppression admin » est donc **sans objet** : ce chemin
+n'existe pas dans le code, il n'y a rien à débloquer.
 
-Demande backend : au minimum, permettre la **modification d'un avis** dans la
-fenêtre de dépôt (14 jours) — c'est un standard attendu des utilisateurs.
+Pour le reste (services, formules, options, justificatifs, notifications) :
+limitation de conception assumée, contournement déjà suffisant. Le vocabulaire
+de l'interface doit dire « Désactiver », jamais « Supprimer », et prévenir
+l'effet de bord (§4.2 : désactiver toutes ses formules fait disparaître le
+prestataire de la recherche).
 
 ---
 
 **Écart n°10 — pas d'endpoint d'agrégation pour le tableau de bord
-prestataire.** *(contourné)*
+prestataire.** **[VOLONTAIRE — non traité cette session]**
+
+Aucune décision transmise sur ce point ; reste une limitation de conception
+assumée, avec un contournement jugé suffisant pour la V1.
 
 Contournement (§4.1) : 3 à 4 appels parallèles au lieu d'un. Coût acceptable en
 V1, mais c'est l'écran ouvert le plus souvent par un prestataire — le premier
-candidat à l'optimisation si la latence se dégrade.
+candidat à l'optimisation si la latence se dégrade en usage réel.
 
-Demande backend : `GET /providers/me/dashboard` renvoyant
-`{ pendingCount, todayMissions[], unreadNotifications, unreadMessages }`.
+Demande backend, si ce point est rouvert : `GET /providers/me/dashboard`
+renvoyant `{ pendingCount, todayMissions[], unreadNotifications,
+unreadMessages }`.
 
 ---
 
 **Écart n°11 — asymétrie de nommage sur la lecture de l'agenda prestataire.**
-*(contourné, sans gravité)*
+**[CLOS]**
 
-Constat : l'écriture se fait sur `PUT /providers/me/availabilities`, mais il
-n'existe **pas** de `GET /providers/me/availabilities`. La relecture passe par la
-route **publique** `GET /providers/:id/availabilities` avec son propre
-`providerId`.
+Constat d'origine : l'écriture se faisait sur
+`PUT /providers/me/availabilities`, mais il n'existait pas de
+`GET /providers/me/availabilities`. La relecture passait par la route
+**publique** `GET /providers/:id/availabilities` avec son propre `providerId`.
 
-Contournement (§4.2) : utiliser `GET /me.providerId` puis la route publique.
-Conséquence à connaître : cette route ne renvoie que les créneaux **actifs**,
-elle n'est donc pas rigoureusement le miroir de ce que `PUT` accepte.
-
-Demande backend : ajouter `GET /providers/me/availabilities` par symétrie avec
-`/providers/me/zones`.
+**Correction appliquée :** `GET /providers/me/availabilities` existe
+désormais, sur le modèle exact de `GET /providers/me/zones` — miroir EXACT de
+ce que le `PUT` accepte (contrairement à ce qu'affirmait la première version de
+ce document, la route publique ne filtrait déjà pas sur `active` : le seul
+écart réel était bien le nommage). Vérifié par test automatisé et par appel
+réel. Voir §4.2.
 
 ---
 
-**Écart n°12 — pas de temps réel sur la messagerie.** *(contourné)*
+**Écart n°12 — pas de temps réel sur la messagerie.** **[PARTIELLEMENT CLOS]**
 
-Constat : aucun WebSocket, aucun SSE. `GET /messages/threads/:id/messages` n'est
-en outre **pas paginée** — elle renvoie l'intégralité du fil.
+Constat d'origine, en deux volets : (a) aucun WebSocket, aucun SSE ; (b)
+`GET /messages/threads/:id/messages` n'était en outre **pas paginée** — elle
+renvoyait l'intégralité du fil.
 
-Contournement (§3.11) : chargement à l'ouverture, pull-to-refresh, et
-rafraîchissement déclenché par le push `chat.message`. **Pas de polling** : la
-route renverrait tout le fil à chaque appel.
+**Volet (b), pagination — CLOS, décision produit :** corrigé maintenant, avant
+que Flutter n'attaque ce module. Voir §3.11 pour le détail complet
+« ancien format / nouveau format » — **c'est un changement de contrat** :
+`data` était un tableau simple sans `meta`, c'est désormais une PAGE avec
+`meta: { page, limit, total }`, sur le même mécanisme `page`/`limit`/`sort`
+que toute autre liste de l'API (pas un schéma propre à la messagerie, pas de
+curseur `?before=<id>`). Tri par défaut inchangé : `createdAt` croissant.
 
-Demande backend : pagination de cette route (au minimum `?before=<messageId>`)
-avant que les conversations ne s'allongent.
+**Volet (a), temps réel — reste un écart, non traité cette session.** Aucun
+WebSocket ni SSE n'existe. Contournement inchangé (§3.11) : chargement à
+l'ouverture, pull-to-refresh, rafraîchissement déclenché par le push
+`chat.message`. **Pas de polling** malgré la pagination : ce serait now
+possible sans rapatrier tout le fil, mais reste déconseillé — le push fait
+déjà ce travail pour un coût réseau bien moindre.
 
 ---
 
 **Écart n°13 — `errors[]` sans `field` sur les erreurs de validation.**
-*(contourné)*
+**[CLOS]**
 
-Constat vérifié en appel réel (§5.1). Le `ValidationPipe` produit des entrées
-`{ code: "validation_error", message }` sans `field`. Seul
-`POST /providers/me/submit` renseigne `field`.
+Constat d'origine, vérifié en appel réel (§5.1) : le `ValidationPipe`
+produisait des entrées `{ code: "validation_error", message }` sans `field`.
+Seul `POST /providers/me/submit` renseignait `field`.
 
-Impact : pas de positionnement automatique des messages sous les champs.
-
-Contournement (§1.4) : validation client exhaustive (toutes les règles sont
-documentées endpoint par endpoint dans ce document) + affichage du message
-serveur en bannière de formulaire.
-
-Demande backend : configurer `exceptionFactory` du `ValidationPipe` pour reporter
-`property` dans `field`. Le filtre d'exception sait déjà lire ce champ — le
-mapping est à un seul endroit.
+**Correction appliquée :** l'`exceptionFactory` du `ValidationPipe` global
+reconstruit désormais le chemin complet du champ fautif dans `field`, y
+compris pour un élément d'un tableau imbriqué (`slots.1.startTime`, pas
+seulement `startTime`). **Le filtre d'exception global n'a nécessité AUCUNE
+modification** : il lisait déjà `field` dès que le corps portait un tableau
+`errors` — confirmé dans le code avant de coder quoi que ce soit. Testé sur
+`/auth/register`, `/me/addresses`, `/missions` et le cas imbriqué de
+`/providers/me/availabilities`. Le message de tête (`message`) reste,
+inchangé, le premier message de la liste. Voir §1.4, §5.1.
 
 ---
 
-**Écart n°14 — la devise n'est portée par aucun champ d'API.** *(contourné)*
+**Écart n°14 — la devise n'est portée par aucun champ d'API.**
+**[VOLONTAIRE — décision produit confirmée : ne rien coder]**
 
-Constat : `price`, `quotedAmount` et `startingPrice` sont des nombres nus.
+Constat, inchangé : `price`, `quotedAmount` et `startingPrice` sont des nombres
+nus, sur 9 champs répartis dans 6 DTO alimentés par 7 services.
 
-Contournement : constante `XOF` côté application, avec un formateur unique
-(`intl`, locale `fr_CI`).
+**Décision produit confirmée :** ne pas ajouter de champ `currency`. Un ajout
+de ce type serait bon marché et non cassant techniquement, mais un
+`currency: "XOF"` constant ne préparerait rien de réel pour une expansion
+multi-devise hypothétique et non planifiée — le vrai travail (montants en
+plus petite unité, taux, devise par prestataire) resterait entier, et ce champ
+donnerait seulement l'illusion qu'il est amorcé.
 
-Demande backend : si un jour la plateforme sort de la zone franc, il faudra un
-champ `currency` — anticiper le modèle Dart en gardant le formatage centralisé.
+Contournement, inchangé côté application : constante `XOF`, formateur unique
+(`intl`, locale `fr_CI`), centralisé pour faciliter une évolution future si la
+plateforme sort un jour de la zone franc.
 
 ---
 
 **Écart n°15 — `GET /providers/:id/reviews` a une forme de `data` atypique.**
-*(contourné)*
+**[CLOS]**
 
-Constat vérifié en appel réel (§3.5) : `data` est un **objet**
-`{ averageRating, totalReviews, reviews[] }` alors que `meta` porte une
-pagination — c'est la seule route paginée du périmètre dont `data` n'est pas un
-tableau. Elle n'a pas de DTO de réponse Swagger, ce qui explique l'écart.
+Constat d'origine, vérifié en appel réel (§3.5) : `data` était un **objet**
+`{ averageRating, totalReviews, reviews[] }` alors que `meta` portait une
+pagination — la seule route paginée du périmètre dont `data` n'était pas un
+tableau.
 
-Contournement : modèle Dart dédié lisant `data.reviews`.
-
-Demande backend : aligner sur la convention (`data` = tableau, agrégats dans
-`meta` ou dans la fiche publique, où ils figurent déjà via `ratingDistribution`).
+**Correction appliquée :** `data` est désormais un tableau des avis, la
+pagination reste dans `meta: { page, limit, total }` — le même modèle que
+toute autre liste. Les deux agrégats retirés faisaient doublon, vérification
+faite dans le code : `totalReviews` valait exactement `meta.total` (même
+clause `where`), et `averageRating` refaisait le calcul de
+`provider_profiles.score` (même agrégat que `ProviderRatingService.recompute`),
+déjà exposé par `GET /providers/:id/public` avec `ratingDistribution` — c'est
+l'écran d'où l'on ouvre cette liste. **Changement de forme de réponse** —
+aucun développement Flutter n'avait commencé au moment de la correction, donc
+aucun risque de casse réelle, mais à savoir si ce document a déjà circulé.
+Le DTO de réponse Swagger manquant (écart n°16) a été ajouté dans la foulée.
 
 ---
 
-**Écart n°16 — routes sans DTO de réponse Swagger.** *(vigilance)*
+**Écart n°16 — routes sans DTO de réponse Swagger.** **[CLOS]**
 
-`POST /disputes`, `GET /disputes/:id`, `GET /categories`, `GET /zones`,
-`GET /zones/nearby`, `GET /providers/:id/service-packs`,
+Constat d'origine : `POST /disputes`, `GET /disputes/:id`, `GET /categories`,
+`GET /zones`, `GET /zones/nearby`, `GET /providers/:id/service-packs`,
 `GET /providers/:id/availabilities`, `GET /providers/:id/unavailabilities`,
-`GET /providers/:id/reviews`, et les trois routes `/files/*` ne déclarent pas
-d'`@ApiEnvelopeResponse`. Leur forme de réponse **n'est pas contractualisée** :
-elle peut changer sans que le document OpenAPI ne bouge.
+`GET /providers/:id/reviews`, et les trois routes `/files/*` ne déclaraient
+aucun `@ApiEnvelopeResponse`. Leur forme de réponse n'était pas
+contractualisée.
 
-Pour `GET /categories` et `GET /zones`, ce document reproduit des captures
-réelles, ce qui suffit. Pour **`/disputes`**, la forme n'a pas été capturée : le
-modèle Dart doit être établi au moment du développement de l'écran, en lisant
-`disputes.service.ts`, et **non** en s'appuyant sur ce document.
-
-Demande backend : ajouter les décorateurs manquants, en priorité sur `/disputes`.
+**Correction appliquée, dans l'ordre de priorité prévu :** `/disputes/*`
+d'abord (c'était la route dont ce document disait que « la forme n'a pas été
+capturée, à établir au moment du développement » — ce n'est plus le cas),
+puis le catalogue public, puis les routes provider publiques, puis `/files/*`.
+Chaque DTO reflète ce que le service renvoie RÉELLEMENT (relu ligne à ligne
+dans le code, rien de réinventé) : `/providers/:id/service-packs` aplatit sa
+relation en `serviceId`/`serviceTitle`/`serviceType`, `/zones` n'expose pas
+`active` (elle ne liste que l'actif), `DisputeMessage.internalOnly` est
+toujours `false` sur la route des parties. Un test verrouille désormais le jeu
+exact de clés de chacune de ces routes. Voir §6 pour le tableau à jour.
 
 ---
 
@@ -3817,6 +4056,17 @@ Demande backend : ajouter les décorateurs manquants, en priorité sur `/dispute
 
 Valeurs vérifiées dans le code, à centraliser dans un seul fichier
 (`core/constants.dart`) plutôt que dispersées.
+
+✅ **Écart n°6 clos pour le bloc « Règles métier » ci-dessous** :
+`GET /settings/public` (route publique, sans jeton) expose désormais ces six
+valeurs en direct — voir §3.6/§3.7/§3.9/§4.4 pour le détail de chacune.
+**Recommandation :** appeler cette route **une fois au démarrage**, mettre le
+résultat en cache mémoire (`ref.read(publicSettingsProvider)` côté Riverpod),
+et **garder les constantes ci-dessous comme valeur de repli** si l'appel
+échoue (hors ligne, cache froid) — jamais comme source de vérité une fois la
+route jointe. C'est le même principe que `expiresInMinutes` renvoyé par
+`POST /auth/otp/send` (§2.1) : une valeur lue au bon moment prime toujours sur
+une constante figée à la compilation.
 
 ```dart
 // Authentification
@@ -3844,11 +4094,14 @@ const kMaxUploadBytes        = 10 * 1024 * 1024;
 const kAllowedUploadMimes    = ['image/jpeg','image/png','image/webp',
                                 'application/pdf','text/plain','text/csv'];
 
-// Règles métier — réglages serveur non lisibles (§7, écart n°6)
+// Règles métier — désormais lisibles via GET /settings/public (écart n°6
+// clos). Ces valeurs restent ici comme REPLI si l'appel échoue, pas comme
+// source de vérité : préférer settings.missionMinLeadTimeMinutes, etc.
 const kMissionMinLeadTime       = Duration(minutes: 60);
 const kCancellationNoticeHours  = Duration(hours: 6);
 const kMissionStartWindow       = Duration(minutes: 120);
 const kMissionPendingExpiry     = Duration(hours: 24);
+const kMissionAutoCloseDays     = 7;
 const kReviewWindowDays         = 14;
 
 // Idempotence et débits
@@ -3895,8 +4148,11 @@ deux surfaces ne partagent que le socle.
 
 Par honnêteté sur les limites de la vérification menée :
 
-- **Forme des réponses de `/disputes/*`** — non capturée, non contractualisée
-  côté Swagger (§7, écart n°16).
+- **Valeurs réelles des réponses de `/disputes/*`** — la STRUCTURE est
+  désormais contractualisée (DTO Swagger ajoutés, écart n°16 clos, jeu de clés
+  verrouillé par un test automatisé), mais aucune capture manuelle par `curl`
+  n'a été faite pour ce module en particulier : les exemples éventuels à
+  ajouter ici restent à produire au moment du développement de l'écran.
 - **Messages d'erreur exacts du service de disponibilité** (chevauchement de
   créneaux, `endTime < startTime`) — la description Swagger les regroupe, les
   textes précis levés par `availability.service.ts` n'ont pas été capturés par
