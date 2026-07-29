@@ -1,0 +1,32 @@
+# Dépendances
+node_modules/
+
+# Résultats de compilation
+dist/
+build/
+*.tsbuildinfo
+
+# Variables d'environnement (contiennent le mot de passe de la base)
+.env
+.env.*
+!.env.example
+
+# Fichiers déposés par les utilisateurs (justificatifs, exports CSV).
+# Ils ne doivent JAMAIS partir dans le dépôt : ce sont des pièces d'identité
+# et des extractions de données personnelles.
+storage/
+storage-test/
+
+# Rapports de couverture de tests
+coverage/
+
+# Dumps de base de données. Un fichier de ce type peut contenir des empreintes
+# de mots de passe, des emails et des téléphones réels (même ceux du jeu de
+# démonstration) : il n'a pas sa place dans l'historique du dépôt.
+*.backup
+*.dump
+*.sql.gz
+
+# Divers
+.DS_Store
+*.log

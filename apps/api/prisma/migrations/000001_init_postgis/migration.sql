@@ -1,0 +1,16 @@
+-- Migration volontairement VIDE.
+--
+-- Elle activait autrefois l'extension PostGIS (`CREATE EXTENSION postgis`),
+-- mais celle-ci n'a jamais été utilisée : la recherche géographique repose sur
+-- un pré-filtre rectangle indexé + haversine (voir `zones.service.ts`), qui
+-- donne le même résultat sans dépendance système. Sur une base où l'extension
+-- n'est pas installée, l'instruction échouait et bloquait tout déploiement.
+--
+-- Le cahier de finalisation §15.6 classe PostGIS en dette explicite, non
+-- bloquante. La migration est conservée — et non supprimée — parce qu'elle
+-- figure déjà dans l'historique de certains environnements : la retirer les
+-- ferait diverger. Elle ne fait donc plus rien.
+--
+-- Le jour où la montée en charge justifiera PostGIS, on ajoutera une NOUVELLE
+-- migration ; on ne réécrira pas celle-ci.
+SELECT 1;

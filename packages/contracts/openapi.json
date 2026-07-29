@@ -1,0 +1,4760 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [
+          {
+            "name": "user-agent",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Returns access and refresh tokens"
+          },
+          "401": {
+            "description": "Invalid credentials"
+          },
+          "429": {
+            "description": "Too many login attempts"
+          }
+        },
+        "summary": "Login with email and password",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
+        "parameters": [
+          {
+            "name": "user-agent",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Returns a new access token and a rotated refresh token"
+          },
+          "401": {
+            "description": "Invalid refresh token"
+          }
+        },
+        "summary": "Refresh access token",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "operationId": "AuthController_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Account created, pending verification"
+          },
+          "409": {
+            "description": "Email or phone already used"
+          }
+        },
+        "summary": "Create a user account",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/forgot-password": {
+      "post": {
+        "operationId": "AuthController_forgotPassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Request a password reset link",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/reset-password": {
+      "post": {
+        "operationId": "AuthController_resetPassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "Invalid or expired token"
+          }
+        },
+        "summary": "Reset the password using a token",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/otp/send": {
+      "post": {
+        "operationId": "AuthController_sendOtp",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendOtpBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Send a one-time code",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/otp/verify": {
+      "post": {
+        "operationId": "AuthController_verifyOtp",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyOtpBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "Invalid or expired code"
+          }
+        },
+        "summary": "Verify a one-time code",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [
+          {
+            "name": "authorization",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogoutBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully logged out"
+          }
+        },
+        "summary": "Logout current session",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/files/upload": {
+      "post": {
+        "operationId": "FilesController_upload",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload a file",
+        "tags": [
+          "Files"
+        ]
+      }
+    },
+    "/api/v1/files/{id}": {
+      "get": {
+        "operationId": "FilesController_getFile",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get file metadata if authorized",
+        "tags": [
+          "Files"
+        ]
+      },
+      "delete": {
+        "operationId": "FilesController_disable",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Disable a file",
+        "tags": [
+          "Files"
+        ]
+      }
+    },
+    "/api/v1/files/{id}/content": {
+      "get": {
+        "operationId": "FilesController_download",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download the file content if authorized",
+        "tags": [
+          "Files"
+        ]
+      }
+    },
+    "/api/v1/admin/users": {
+      "get": {
+        "operationId": "AdminUsersController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List users with filters and pagination",
+        "tags": [
+          "Admin Users"
+        ]
+      }
+    },
+    "/api/v1/admin/users/{id}": {
+      "get": {
+        "operationId": "AdminUsersController_detail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get user detail",
+        "tags": [
+          "Admin Users"
+        ]
+      }
+    },
+    "/api/v1/admin/users/{id}/status": {
+      "patch": {
+        "operationId": "AdminUsersController_changeStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserStatusBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change user status",
+        "tags": [
+          "Admin Users"
+        ]
+      }
+    },
+    "/api/v1/admin/users/{id}/notes": {
+      "post": {
+        "operationId": "AdminUsersController_addNote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddUserNoteBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add an internal note about a user",
+        "tags": [
+          "Admin Users"
+        ]
+      }
+    },
+    "/api/v1/admin/users/{id}/roles": {
+      "patch": {
+        "operationId": "AdminUsersController_setRoles",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetUserRolesBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set the roles of a user",
+        "tags": [
+          "Admin Users"
+        ]
+      }
+    },
+    "/api/v1/admin/roles": {
+      "get": {
+        "operationId": "AdminRolesController_listRoles",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List roles",
+        "tags": [
+          "Roles"
+        ]
+      },
+      "post": {
+        "operationId": "AdminRolesController_createRole",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoleBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create role",
+        "tags": [
+          "Roles"
+        ]
+      }
+    },
+    "/api/v1/admin/permissions": {
+      "get": {
+        "operationId": "AdminRolesController_listPermissions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List permissions",
+        "tags": [
+          "Roles"
+        ]
+      }
+    },
+    "/api/v1/admin/roles/{id}": {
+      "patch": {
+        "operationId": "AdminRolesController_updateRole",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRoleBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update role",
+        "tags": [
+          "Roles"
+        ]
+      }
+    },
+    "/api/v1/admin/roles/{id}/permissions": {
+      "patch": {
+        "operationId": "AdminRolesController_assignPermissions",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignPermissionsBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Assign permissions to a role",
+        "tags": [
+          "Roles"
+        ]
+      }
+    },
+    "/api/v1/admin/dashboard/summary": {
+      "get": {
+        "operationId": "DashboardController_summary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get operational dashboard summary",
+        "tags": [
+          "Admin Dashboard"
+        ]
+      }
+    },
+    "/api/v1/admin/dashboard/charts": {
+      "get": {
+        "operationId": "DashboardController_charts",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get dashboard chart series",
+        "tags": [
+          "Admin Dashboard"
+        ]
+      }
+    },
+    "/api/v1/admin/providers": {
+      "get": {
+        "operationId": "AdminProvidersController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List providers with validation status filter",
+        "tags": [
+          "Providers"
+        ]
+      }
+    },
+    "/api/v1/admin/providers/{id}": {
+      "get": {
+        "operationId": "AdminProvidersController_detail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get provider detail",
+        "tags": [
+          "Providers"
+        ]
+      },
+      "patch": {
+        "operationId": "AdminProvidersController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderUpdateBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update admin-editable provider fields",
+        "tags": [
+          "Providers"
+        ]
+      }
+    },
+    "/api/v1/admin/providers/{id}/status": {
+      "patch": {
+        "operationId": "AdminProvidersController_changeStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderStatusChangeBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change provider validation status",
+        "tags": [
+          "Providers"
+        ]
+      }
+    },
+    "/api/v1/admin/providers/{id}/notes": {
+      "post": {
+        "operationId": "AdminProvidersController_addNote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddProviderNoteBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add an internal note about a provider",
+        "tags": [
+          "Providers"
+        ]
+      }
+    },
+    "/api/v1/admin/verifications/providers": {
+      "get": {
+        "operationId": "AdminVerificationsController_queue",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List provider dossiers awaiting verification",
+        "tags": [
+          "Providers"
+        ]
+      }
+    },
+    "/api/v1/admin/verifications/documents/{id}": {
+      "get": {
+        "operationId": "AdminVerificationsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a submitted document",
+        "tags": [
+          "Providers"
+        ]
+      }
+    },
+    "/api/v1/admin/verifications/documents/{id}/file": {
+      "post": {
+        "operationId": "AdminVerificationsController_attach",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Attach the supporting file to a document",
+        "tags": [
+          "Providers"
+        ]
+      }
+    },
+    "/api/v1/admin/verifications/documents/{id}/approve": {
+      "post": {
+        "operationId": "AdminVerificationsController_approve",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Approve a provider document",
+        "tags": [
+          "Providers"
+        ]
+      }
+    },
+    "/api/v1/admin/verifications/documents/{id}/reject": {
+      "post": {
+        "operationId": "AdminVerificationsController_reject",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectDocumentBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reject a provider document with a reason",
+        "tags": [
+          "Providers"
+        ]
+      }
+    },
+    "/api/v1/providers/search": {
+      "get": {
+        "operationId": "ProviderSearchController_searchProviders",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Search available providers by service, location and time slot",
+        "tags": [
+          "Provider search"
+        ]
+      }
+    },
+    "/api/v1/providers/{id}/public": {
+      "get": {
+        "operationId": "ProviderSearchController_publicProfile",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get the full public profile of a provider",
+        "tags": [
+          "Provider search"
+        ]
+      }
+    },
+    "/api/v1/providers/me": {
+      "post": {
+        "operationId": "ProviderSelfController_createProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProviderProfileBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create my provider profile",
+        "tags": [
+          "Provider space"
+        ]
+      },
+      "get": {
+        "operationId": "ProviderSelfController_myProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get my provider profile with its completion checklist",
+        "tags": [
+          "Provider space"
+        ]
+      },
+      "patch": {
+        "operationId": "ProviderSelfController_updateProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProviderProfileBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update my provider profile",
+        "tags": [
+          "Provider space"
+        ]
+      }
+    },
+    "/api/v1/providers/me/submit": {
+      "post": {
+        "operationId": "ProviderSelfController_submit",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Submit my provider file for review",
+        "tags": [
+          "Provider space"
+        ]
+      }
+    },
+    "/api/v1/providers/me/services": {
+      "get": {
+        "operationId": "ProviderSelfController_listServices",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List my declared services",
+        "tags": [
+          "Provider space"
+        ]
+      },
+      "post": {
+        "operationId": "ProviderSelfController_createService",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProviderServiceBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Declare one of my services",
+        "tags": [
+          "Provider space"
+        ]
+      }
+    },
+    "/api/v1/providers/me/services/{id}": {
+      "patch": {
+        "operationId": "ProviderSelfController_updateService",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProviderServiceBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update or deactivate one of my services",
+        "tags": [
+          "Provider space"
+        ]
+      }
+    },
+    "/api/v1/providers/me/documents": {
+      "get": {
+        "operationId": "ProviderSelfController_listDocuments",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List my documents, their status and rejection reasons",
+        "tags": [
+          "Provider space"
+        ]
+      },
+      "post": {
+        "operationId": "ProviderSelfController_submitDocument",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitDocumentBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Submit one of my supporting documents",
+        "tags": [
+          "Provider space"
+        ]
+      }
+    },
+    "/api/v1/providers/me/zones": {
+      "get": {
+        "operationId": "ProviderSelfController_listZones",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List my intervention zones",
+        "tags": [
+          "Provider space"
+        ]
+      },
+      "put": {
+        "operationId": "ProviderSelfController_replaceZones",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplaceProviderZonesBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Replace the whole list of my intervention zones",
+        "tags": [
+          "Provider space"
+        ]
+      }
+    },
+    "/api/v1/providers/me/portfolio": {
+      "get": {
+        "operationId": "ProviderSelfController_listPortfolio",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List my portfolio items",
+        "tags": [
+          "Provider space"
+        ]
+      },
+      "post": {
+        "operationId": "ProviderSelfController_addPortfolioItem",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePortfolioItemBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add one of my portfolio items",
+        "tags": [
+          "Provider space"
+        ]
+      }
+    },
+    "/api/v1/providers/me/portfolio/{id}": {
+      "patch": {
+        "operationId": "ProviderSelfController_updatePortfolioItem",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePortfolioItemBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update one of my portfolio items",
+        "tags": [
+          "Provider space"
+        ]
+      },
+      "delete": {
+        "operationId": "ProviderSelfController_removePortfolioItem",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove one of my portfolio items",
+        "tags": [
+          "Provider space"
+        ]
+      }
+    },
+    "/api/v1/me/notifications": {
+      "get": {
+        "operationId": "MeNotificationsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List my notifications",
+        "tags": [
+          "My notifications"
+        ]
+      }
+    },
+    "/api/v1/me/notifications/unread-count": {
+      "get": {
+        "operationId": "MeNotificationsController_unreadCount",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Count my unread notifications",
+        "tags": [
+          "My notifications"
+        ]
+      }
+    },
+    "/api/v1/me/notifications/{id}/read": {
+      "patch": {
+        "operationId": "MeNotificationsController_markRead",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark one of my notifications as read",
+        "tags": [
+          "My notifications"
+        ]
+      }
+    },
+    "/api/v1/me/notifications/read-all": {
+      "post": {
+        "operationId": "MeNotificationsController_markAllRead",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark all my notifications as read",
+        "tags": [
+          "My notifications"
+        ]
+      }
+    },
+    "/api/v1/me/devices": {
+      "get": {
+        "operationId": "MeNotificationsController_listDevices",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List my registered devices",
+        "tags": [
+          "My notifications"
+        ]
+      },
+      "post": {
+        "operationId": "MeNotificationsController_registerDevice",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDeviceBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Register one of my push device tokens (idempotent)",
+        "tags": [
+          "My notifications"
+        ]
+      }
+    },
+    "/api/v1/me/devices/{token}": {
+      "delete": {
+        "operationId": "MeNotificationsController_unregisterDevice",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unregister one of my push device tokens",
+        "tags": [
+          "My notifications"
+        ]
+      }
+    },
+    "/api/v1/admin/clients": {
+      "get": {
+        "operationId": "AdminClientsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List clients with filters and pagination",
+        "tags": [
+          "Clients"
+        ]
+      }
+    },
+    "/api/v1/admin/clients/{id}": {
+      "get": {
+        "operationId": "AdminClientsController_detail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a client profile",
+        "tags": [
+          "Clients"
+        ]
+      }
+    },
+    "/api/v1/admin/clients/{id}/missions": {
+      "get": {
+        "operationId": "AdminClientsController_missions",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the mission history of a client",
+        "tags": [
+          "Clients"
+        ]
+      }
+    },
+    "/api/v1/admin/clients/{id}/notes": {
+      "post": {
+        "operationId": "AdminClientsController_addNote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddClientNoteBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add an internal note about a client",
+        "tags": [
+          "Clients"
+        ]
+      }
+    },
+    "/api/v1/admin/missions": {
+      "get": {
+        "operationId": "AdminMissionsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List missions",
+        "tags": [
+          "Missions"
+        ]
+      }
+    },
+    "/api/v1/admin/missions/{id}": {
+      "get": {
+        "operationId": "AdminMissionsController_detail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get mission detail",
+        "tags": [
+          "Missions"
+        ]
+      }
+    },
+    "/api/v1/admin/missions/{id}/status": {
+      "patch": {
+        "operationId": "AdminMissionsController_changeStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MissionStatusChangeBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change mission status",
+        "tags": [
+          "Missions"
+        ]
+      }
+    },
+    "/api/v1/admin/missions/{id}/reschedule": {
+      "post": {
+        "operationId": "AdminMissionsController_reschedule",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MissionRescheduleBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reschedule mission",
+        "tags": [
+          "Missions"
+        ]
+      }
+    },
+    "/api/v1/admin/missions/{id}/cancel": {
+      "post": {
+        "operationId": "AdminMissionsController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MissionCancelBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel mission with reason",
+        "tags": [
+          "Missions"
+        ]
+      }
+    },
+    "/api/v1/admin/messages/threads": {
+      "get": {
+        "operationId": "AdminMessagesController_listThreads",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List message threads",
+        "tags": [
+          "Messages"
+        ]
+      }
+    },
+    "/api/v1/admin/messages/threads/{id}": {
+      "get": {
+        "operationId": "AdminMessagesController_threadDetail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get thread detail",
+        "tags": [
+          "Messages"
+        ]
+      }
+    },
+    "/api/v1/admin/reviews": {
+      "get": {
+        "operationId": "AdminReviewsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List reviews",
+        "tags": [
+          "Reviews"
+        ]
+      }
+    },
+    "/api/v1/admin/reviews/{id}/status": {
+      "patch": {
+        "operationId": "AdminReviewsController_moderate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewStatusChangeBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Moderate review",
+        "tags": [
+          "Reviews"
+        ]
+      }
+    },
+    "/api/v1/admin/disputes": {
+      "get": {
+        "operationId": "AdminDisputesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List disputes",
+        "tags": [
+          "Disputes"
+        ]
+      },
+      "post": {
+        "operationId": "AdminDisputesController_open",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenDisputeBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Open a dispute",
+        "tags": [
+          "Disputes"
+        ]
+      }
+    },
+    "/api/v1/admin/disputes/{id}": {
+      "get": {
+        "operationId": "AdminDisputesController_detail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get dispute detail",
+        "tags": [
+          "Disputes"
+        ]
+      }
+    },
+    "/api/v1/admin/disputes/{id}/assign": {
+      "patch": {
+        "operationId": "AdminDisputesController_assign",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignDisputeBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Assign dispute",
+        "tags": [
+          "Disputes"
+        ]
+      }
+    },
+    "/api/v1/admin/disputes/{id}/status": {
+      "patch": {
+        "operationId": "AdminDisputesController_changeStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DisputeStatusChangeBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change dispute status",
+        "tags": [
+          "Disputes"
+        ]
+      }
+    },
+    "/api/v1/admin/disputes/{id}/messages": {
+      "post": {
+        "operationId": "AdminDisputesController_addMessage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DisputeMessageBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a message to a dispute",
+        "tags": [
+          "Disputes"
+        ]
+      }
+    },
+    "/api/v1/admin/disputes/{id}/files": {
+      "post": {
+        "operationId": "AdminDisputesController_attachFile",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttachDisputeFileBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Attach an evidence file to a dispute",
+        "tags": [
+          "Disputes"
+        ]
+      }
+    },
+    "/api/v1/missions/{id}/history": {
+      "get": {
+        "operationId": "MissionsController_history",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the status history of a mission",
+        "tags": [
+          "Missions"
+        ]
+      }
+    },
+    "/api/v1/missions": {
+      "post": {
+        "operationId": "MissionActionsController_create",
+        "parameters": [
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Rejouer la même clé sous 10 minutes renvoie la mission déjà créée.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMissionBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Book a service (create a mission)",
+        "tags": [
+          "Missions"
+        ]
+      }
+    },
+    "/api/v1/missions/{id}": {
+      "get": {
+        "operationId": "MissionActionsController_detail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a mission I take part in",
+        "tags": [
+          "Missions"
+        ]
+      }
+    },
+    "/api/v1/missions/{id}/accept": {
+      "post": {
+        "operationId": "MissionActionsController_accept",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Accept a mission (provider)",
+        "tags": [
+          "Missions"
+        ]
+      }
+    },
+    "/api/v1/missions/{id}/refuse": {
+      "post": {
+        "operationId": "MissionActionsController_refuse",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MissionReasonBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Refuse a mission (provider)",
+        "tags": [
+          "Missions"
+        ]
+      }
+    },
+    "/api/v1/missions/{id}/start": {
+      "post": {
+        "operationId": "MissionActionsController_start",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Start a mission (provider)",
+        "tags": [
+          "Missions"
+        ]
+      }
+    },
+    "/api/v1/missions/{id}/complete": {
+      "post": {
+        "operationId": "MissionActionsController_complete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Complete a mission (provider)",
+        "tags": [
+          "Missions"
+        ]
+      }
+    },
+    "/api/v1/missions/{id}/cancel": {
+      "post": {
+        "operationId": "MissionActionsController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MissionReasonBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel a mission I take part in (reason required)",
+        "tags": [
+          "Missions"
+        ]
+      }
+    },
+    "/api/v1/missions/{id}/reschedules": {
+      "get": {
+        "operationId": "MissionActionsController_listReschedules",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the reschedule requests of a mission",
+        "tags": [
+          "Missions"
+        ]
+      }
+    },
+    "/api/v1/missions/{id}/reschedule": {
+      "post": {
+        "operationId": "MissionActionsController_requestReschedule",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestRescheduleBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Propose a new date for a mission",
+        "tags": [
+          "Missions"
+        ]
+      }
+    },
+    "/api/v1/missions/{id}/reschedule/{rid}/accept": {
+      "post": {
+        "operationId": "MissionActionsController_acceptReschedule",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rid",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Accept a reschedule request made by the other party",
+        "tags": [
+          "Missions"
+        ]
+      }
+    },
+    "/api/v1/missions/{id}/reschedule/{rid}/reject": {
+      "post": {
+        "operationId": "MissionActionsController_rejectReschedule",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rid",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MissionReasonBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reject a reschedule request made by the other party",
+        "tags": [
+          "Missions"
+        ]
+      }
+    },
+    "/api/v1/missions/{id}/review": {
+      "post": {
+        "operationId": "MissionActionsController_submitReview",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitReviewBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Post my review of a completed mission",
+        "tags": [
+          "Missions"
+        ]
+      }
+    },
+    "/api/v1/missions/{id}/thread": {
+      "get": {
+        "operationId": "MissionActionsController_thread",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the chat thread of a mission I take part in",
+        "tags": [
+          "Missions"
+        ]
+      }
+    },
+    "/api/v1/me/missions": {
+      "get": {
+        "operationId": "ClientMissionsController_listMine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List my missions as a client",
+        "tags": [
+          "Missions"
+        ]
+      }
+    },
+    "/api/v1/providers/me/missions": {
+      "get": {
+        "operationId": "ProviderMissionsController_listMine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List my missions as a provider (soonest first)",
+        "tags": [
+          "Missions"
+        ]
+      }
+    },
+    "/api/v1/messages/threads/{id}/messages": {
+      "get": {
+        "operationId": "MessagesController_read",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Read the messages of a thread I belong to",
+        "tags": [
+          "Messages"
+        ]
+      },
+      "post": {
+        "operationId": "MessagesController_send",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessageBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send a message in a thread I belong to",
+        "tags": [
+          "Messages"
+        ]
+      }
+    },
+    "/api/v1/me/threads": {
+      "get": {
+        "operationId": "MyThreadsController_listMine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List my conversations with their last message and unread count",
+        "tags": [
+          "Messages"
+        ]
+      }
+    },
+    "/api/v1/messages/threads/{id}/read": {
+      "patch": {
+        "operationId": "ThreadReadController_markRead",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark the messages of a thread as read",
+        "tags": [
+          "Messages"
+        ]
+      }
+    },
+    "/api/v1/providers/{id}/reviews": {
+      "get": {
+        "operationId": "PublicReviewsController_listForProvider",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List the published reviews of a provider",
+        "tags": [
+          "Reviews"
+        ]
+      }
+    },
+    "/api/v1/me/reviews": {
+      "get": {
+        "operationId": "MyReviewsController_listMine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the reviews I posted",
+        "tags": [
+          "Reviews"
+        ]
+      }
+    },
+    "/api/v1/reviews/{id}/report": {
+      "post": {
+        "operationId": "ReviewReportsController_report",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportReviewBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Report a review for moderation",
+        "tags": [
+          "Reviews"
+        ]
+      }
+    },
+    "/api/v1/disputes": {
+      "post": {
+        "operationId": "DisputesController_open",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenDisputeBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Open a dispute on one of my missions",
+        "tags": [
+          "Disputes"
+        ]
+      }
+    },
+    "/api/v1/disputes/{id}": {
+      "get": {
+        "operationId": "DisputesController_detail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Follow one of my disputes",
+        "tags": [
+          "Disputes"
+        ]
+      }
+    },
+    "/api/v1/admin/categories": {
+      "get": {
+        "operationId": "AdminCatalogController_listCategories",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List catalog categories",
+        "tags": [
+          "Catalog"
+        ]
+      },
+      "post": {
+        "operationId": "AdminCatalogController_createCategory",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCategoryBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create category",
+        "tags": [
+          "Catalog"
+        ]
+      }
+    },
+    "/api/v1/admin/categories/{id}": {
+      "patch": {
+        "operationId": "AdminCatalogController_updateCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCategoryBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update or (de)activate a category",
+        "tags": [
+          "Catalog"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminCatalogController_deactivateCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Deactivate a category",
+        "tags": [
+          "Catalog"
+        ]
+      }
+    },
+    "/api/v1/admin/service-types": {
+      "post": {
+        "operationId": "AdminCatalogController_createServiceType",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateServiceTypeBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a service type",
+        "tags": [
+          "Catalog"
+        ]
+      }
+    },
+    "/api/v1/admin/service-types/{id}": {
+      "patch": {
+        "operationId": "AdminCatalogController_updateServiceType",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateServiceTypeBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update or (de)activate a service type",
+        "tags": [
+          "Catalog"
+        ]
+      }
+    },
+    "/api/v1/admin/provider-services": {
+      "post": {
+        "operationId": "AdminCatalogController_attachProviderService",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttachProviderServiceBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Attach a service type to a provider",
+        "tags": [
+          "Catalog"
+        ]
+      }
+    },
+    "/api/v1/admin/zones": {
+      "get": {
+        "operationId": "AdminZonesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List zones",
+        "tags": [
+          "Zones"
+        ]
+      },
+      "post": {
+        "operationId": "AdminZonesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateZoneBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create zone",
+        "tags": [
+          "Zones"
+        ]
+      }
+    },
+    "/api/v1/admin/zones/{id}": {
+      "patch": {
+        "operationId": "AdminZonesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateZoneBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update or (de)activate a zone",
+        "tags": [
+          "Zones"
+        ]
+      }
+    },
+    "/api/v1/admin/zones/{id}/providers/{providerId}": {
+      "post": {
+        "operationId": "AdminZonesController_attachProvider",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Attach a zone to a provider",
+        "tags": [
+          "Zones"
+        ]
+      }
+    },
+    "/api/v1/admin/providers/{providerId}/availability": {
+      "get": {
+        "operationId": "AdminAvailabilityController_list",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List a provider's availability",
+        "tags": [
+          "Availability"
+        ]
+      },
+      "post": {
+        "operationId": "AdminAvailabilityController_add",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAvailabilityBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add an availability slot",
+        "tags": [
+          "Availability"
+        ]
+      }
+    },
+    "/api/v1/admin/providers/{providerId}/availability/{slotId}": {
+      "delete": {
+        "operationId": "AdminAvailabilityController_remove",
+        "parameters": [
+          {
+            "name": "slotId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove an availability slot",
+        "tags": [
+          "Availability"
+        ]
+      }
+    },
+    "/api/v1/categories": {
+      "get": {
+        "operationId": "PublicCategoriesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List active categories with their service types",
+        "tags": [
+          "Catalog"
+        ]
+      }
+    },
+    "/api/v1/zones": {
+      "get": {
+        "operationId": "PublicZonesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List active zones",
+        "tags": [
+          "Zones"
+        ]
+      }
+    },
+    "/api/v1/zones/nearby": {
+      "get": {
+        "operationId": "PublicZonesController_nearby",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Find active zones within a radius of a point",
+        "tags": [
+          "Zones"
+        ]
+      }
+    },
+    "/api/v1/providers/me/service-packs": {
+      "post": {
+        "operationId": "ProviderServicePacksController_createMine",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateServicePackBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create one of my service packs",
+        "tags": [
+          "Catalog"
+        ]
+      }
+    },
+    "/api/v1/providers/me/service-packs/{id}": {
+      "patch": {
+        "operationId": "ProviderServicePacksController_updateMine",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateServicePackBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update one of my service packs",
+        "tags": [
+          "Catalog"
+        ]
+      }
+    },
+    "/api/v1/providers/me/service-packs/{packId}/options": {
+      "get": {
+        "operationId": "ProviderServicePacksController_listMyPackOptions",
+        "parameters": [
+          {
+            "name": "packId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the options of one of my service packs",
+        "tags": [
+          "Catalog"
+        ]
+      },
+      "post": {
+        "operationId": "ProviderServicePacksController_createMyPackOption",
+        "parameters": [
+          {
+            "name": "packId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateServicePackOptionBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add an option to one of my service packs",
+        "tags": [
+          "Catalog"
+        ]
+      }
+    },
+    "/api/v1/providers/me/service-pack-options/{id}": {
+      "patch": {
+        "operationId": "ProviderServicePacksController_updateMyPackOption",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateServicePackOptionBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update or deactivate one of my service pack options",
+        "tags": [
+          "Catalog"
+        ]
+      }
+    },
+    "/api/v1/providers/{id}/service-packs": {
+      "get": {
+        "operationId": "ProviderServicePacksController_listForProvider",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "List the active service packs of a provider",
+        "tags": [
+          "Catalog"
+        ]
+      }
+    },
+    "/api/v1/providers/me/availabilities": {
+      "put": {
+        "operationId": "ProviderAvailabilityController_replaceMine",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplaceAvailabilitiesBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Replace my weekly availability",
+        "tags": [
+          "Availability"
+        ]
+      }
+    },
+    "/api/v1/providers/me/unavailabilities": {
+      "post": {
+        "operationId": "ProviderAvailabilityController_addUnavailability",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUnavailabilityBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Declare one of my exceptional unavailabilities",
+        "tags": [
+          "Availability"
+        ]
+      }
+    },
+    "/api/v1/providers/me/unavailabilities/{id}": {
+      "delete": {
+        "operationId": "ProviderAvailabilityController_removeUnavailability",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove one of my unavailabilities",
+        "tags": [
+          "Availability"
+        ]
+      }
+    },
+    "/api/v1/providers/{id}/availabilities": {
+      "get": {
+        "operationId": "ProviderAvailabilityController_listForProvider",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get the weekly availability of a provider",
+        "tags": [
+          "Availability"
+        ]
+      }
+    },
+    "/api/v1/providers/{id}/unavailabilities": {
+      "get": {
+        "operationId": "ProviderAvailabilityController_listUnavailabilities",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get the exceptional unavailabilities of a provider",
+        "tags": [
+          "Availability"
+        ]
+      }
+    },
+    "/api/v1/admin/settings": {
+      "get": {
+        "operationId": "AdminSettingsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List settings",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
+    "/api/v1/admin/settings/{key}": {
+      "patch": {
+        "operationId": "AdminSettingsController_update",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSettingBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a setting",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
+    "/api/v1/admin/notifications": {
+      "get": {
+        "operationId": "AdminNotificationsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List notifications",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/api/v1/admin/notifications/templates": {
+      "get": {
+        "operationId": "AdminNotificationsController_templates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List notification templates",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/api/v1/admin/notifications/send": {
+      "post": {
+        "operationId": "AdminNotificationsController_send",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendNotificationBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send a system notification",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/api/v1/admin/notification-templates": {
+      "get": {
+        "operationId": "AdminNotificationTemplatesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List notification templates",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/api/v1/admin/notification-templates/{id}": {
+      "patch": {
+        "operationId": "AdminNotificationTemplatesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNotificationTemplateBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a notification template",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/api/v1/admin/exports": {
+      "get": {
+        "operationId": "AdminExportsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List export jobs",
+        "tags": [
+          "Exports"
+        ]
+      },
+      "post": {
+        "operationId": "AdminExportsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExportBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create export job",
+        "tags": [
+          "Exports"
+        ]
+      }
+    },
+    "/api/v1/admin/exports/{id}": {
+      "get": {
+        "operationId": "AdminExportsController_status",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get export job status",
+        "tags": [
+          "Exports"
+        ]
+      }
+    },
+    "/api/v1/admin/audit-logs": {
+      "get": {
+        "operationId": "AdminAuditController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List audit logs with filters",
+        "tags": [
+          "Audit"
+        ]
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "operationId": "MeController_profile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get my profile",
+        "tags": [
+          "Me"
+        ]
+      },
+      "patch": {
+        "operationId": "MeController_updateProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update my identity (name, email, phone)",
+        "tags": [
+          "Me"
+        ]
+      },
+      "delete": {
+        "operationId": "MeController_deactivate",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAccountBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Deactivate my account (status becomes deleted, data is kept)",
+        "tags": [
+          "Me"
+        ]
+      }
+    },
+    "/api/v1/me/password": {
+      "post": {
+        "operationId": "MeController_changePassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change my password and revoke my other sessions",
+        "tags": [
+          "Me"
+        ]
+      }
+    },
+    "/api/v1/me/addresses": {
+      "get": {
+        "operationId": "MeController_listAddresses",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List my addresses",
+        "tags": [
+          "Me"
+        ]
+      },
+      "post": {
+        "operationId": "MeController_createAddress",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddressBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create one of my addresses",
+        "tags": [
+          "Me"
+        ]
+      }
+    },
+    "/api/v1/me/addresses/{id}": {
+      "patch": {
+        "operationId": "MeController_updateAddress",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAddressBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update one of my addresses",
+        "tags": [
+          "Me"
+        ]
+      },
+      "delete": {
+        "operationId": "MeController_removeAddress",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete one of my addresses",
+        "tags": [
+          "Me"
+        ]
+      }
+    },
+    "/api/v1/me/addresses/{id}/default": {
+      "post": {
+        "operationId": "MeController_setDefaultAddress",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set one of my addresses as the default one",
+        "tags": [
+          "Me"
+        ]
+      }
+    },
+    "/api/v1/me/favorites": {
+      "get": {
+        "operationId": "MeController_listFavorites",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List my favorite providers",
+        "tags": [
+          "Me"
+        ]
+      }
+    },
+    "/api/v1/me/favorites/{providerId}": {
+      "post": {
+        "operationId": "MeController_addFavorite",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a provider to my favorites (idempotent)",
+        "tags": [
+          "Me"
+        ]
+      },
+      "delete": {
+        "operationId": "MeController_removeFavorite",
+        "parameters": [
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a provider from my favorites (idempotent)",
+        "tags": [
+          "Me"
+        ]
+      }
+    },
+    "/api/v1/admin/jobs/{name}/run": {
+      "post": {
+        "operationId": "AdminJobsController_run",
+        "parameters": [
+          {
+            "name": "name",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Run a scheduled job now (diagnosis and catch-up)",
+        "tags": [
+          "Admin jobs"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "PRESTGO Back-office Admin and Backend Services",
+    "description": "Versioned contract for PRESTGO V1 backend and internal admin workflows.",
+    "version": "1.0.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [
+    {
+      "url": "/api/v1",
+      "description": "API v1"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "LoginBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RefreshBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RegisterBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ForgotPasswordBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ResetPasswordBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SendOtpBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "VerifyOtpBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "LogoutBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateUserStatusBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AddUserNoteBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SetUserRolesBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateRoleBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateRoleBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AssignPermissionsBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ProviderUpdateBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ProviderStatusChangeBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AddProviderNoteBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RejectDocumentBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateProviderProfileBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateProviderProfileBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateProviderServiceBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateProviderServiceBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SubmitDocumentBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ReplaceProviderZonesBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreatePortfolioItemBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdatePortfolioItemBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RegisterDeviceBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AddClientNoteBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "MissionStatusChangeBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "MissionRescheduleBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "MissionCancelBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ReviewStatusChangeBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "OpenDisputeBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AssignDisputeBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "DisputeStatusChangeBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "DisputeMessageBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AttachDisputeFileBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateMissionBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "MissionReasonBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RequestRescheduleBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SubmitReviewBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SendMessageBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ReportReviewBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateCategoryBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateCategoryBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateServiceTypeBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateServiceTypeBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AttachProviderServiceBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateZoneBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateZoneBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateAvailabilityBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateServicePackBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateServicePackBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateServicePackOptionBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateServicePackOptionBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ReplaceAvailabilitiesBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateUnavailabilityBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateSettingBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SendNotificationBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateNotificationTemplateBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateExportBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateProfileBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ChangePasswordBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "DeleteAccountBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AddressBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateAddressBodyDto": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  }
+}
