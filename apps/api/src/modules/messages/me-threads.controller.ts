@@ -1,10 +1,12 @@
 import { Controller, ForbiddenException, Get, Param, Patch, Query, Req } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { ok } from "../../common/contracts/api-response.js";
+import { ApiEnvelopeResponse, ApiErrorResponse } from "../../common/openapi/api-envelope.decorator.js";
 import { PaginationQueryDto } from "../../common/dto/pagination.dto.js";
 import type { AuthenticatedRequest } from "../../common/guards/permissions.guard.js";
 import { MissionAccessService } from "../missions/mission-access.service.js";
 import { MessagesService } from "./messages.service.js";
+import { MarkThreadReadResultDto, MyThreadListItemDto } from "./response-dto.js";
 
 /**
  * Mes conversations (§12).
@@ -21,6 +23,8 @@ export class MyThreadsController {
 
   @Get("threads")
   @ApiOperation({ summary: "List my conversations with their last message and unread count" })
+  @ApiEnvelopeResponse(MyThreadListItemDto, { isArray: true, paginated: true, description: "Mes conversations" })
+  @ApiErrorResponse(401, "Authentification requise")
   async listMine(@Query() query: PaginationQueryDto, @Req() req: AuthenticatedRequest) {
     const userId = req.user?.id;
     if (!userId) {
@@ -43,6 +47,10 @@ export class ThreadReadController {
 
   @Patch(":id/read")
   @ApiOperation({ summary: "Mark the messages of a thread as read" })
+  @ApiEnvelopeResponse(MarkThreadReadResultDto, { description: "Messages marqués lus" })
+  @ApiErrorResponse(401, "Authentification requise")
+  @ApiErrorResponse(403, "Vous n'êtes pas partie à la mission de cette conversation")
+  @ApiErrorResponse(404, "Conversation ou mission introuvable")
   async markRead(@Param("id") id: string, @Req() req: AuthenticatedRequest) {
     const userId = req.user?.id;
     if (!userId) {
