@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma/prisma.service.js";
 import { AuditService } from "../audit/audit.service.js";
+import { SETTING, SETTING_DEFAULT } from "./settings.keys.js";
 
 @Injectable()
 export class SettingsService {
@@ -79,6 +80,47 @@ export class SettingsService {
         .filter(Boolean);
     }
     return fallback;
+  }
+
+  /**
+   * Réglages métier visibles par l'utilisateur final (§13).
+   *
+   * Ces six valeurs pilotent des règles que l'application mobile doit refléter
+   * AVANT d'appeler l'API : griser « Démarrer » hors de la fenêtre autorisée,
+   * afficher un compte à rebours de dépôt d'avis, avertir d'une annulation
+   * tardive. Sans cette route, elles ne se lisaient que par `/admin/settings` :
+   * l'application devait les coder en dur, et mentait à l'utilisateur dès que
+   * l'exploitation modifiait un réglage.
+   *
+   * Rien d'autre n'est exposé : la liste est FERMÉE, écrite ici en toutes
+   * lettres. `list()` reste réservée au back-office — elle renverrait aussi les
+   * réglages d'exploitation, qui ne regardent pas le public.
+   */
+  async publicSettings() {
+    const [
+      missionMinLeadTimeMinutes,
+      missionCancellationNoticeHours,
+      missionStartWindowMinutes,
+      missionPendingExpiryHours,
+      missionAutoCloseDays,
+      reviewsWindowDays
+    ] = await Promise.all([
+      this.getNumber(SETTING.missionMinLeadTimeMinutes, SETTING_DEFAULT.missionMinLeadTimeMinutes),
+      this.getNumber(SETTING.missionCancellationNoticeHours, SETTING_DEFAULT.missionCancellationNoticeHours),
+      this.getNumber(SETTING.missionStartWindowMinutes, SETTING_DEFAULT.missionStartWindowMinutes),
+      this.getNumber(SETTING.missionPendingExpiryHours, SETTING_DEFAULT.missionPendingExpiryHours),
+      this.getNumber(SETTING.missionAutoCloseDays, SETTING_DEFAULT.missionAutoCloseDays),
+      this.getNumber(SETTING.reviewsWindowDays, SETTING_DEFAULT.reviewsWindowDays)
+    ]);
+
+    return {
+      missionMinLeadTimeMinutes,
+      missionCancellationNoticeHours,
+      missionStartWindowMinutes,
+      missionPendingExpiryHours,
+      missionAutoCloseDays,
+      reviewsWindowDays
+    };
   }
 
   // Vérifie que la valeur correspond bien au type déclaré du réglage.

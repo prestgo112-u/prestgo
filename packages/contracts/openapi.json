@@ -3171,6 +3171,43 @@
         ]
       }
     },
+    "/api/v1/settings/public": {
+      "get": {
+        "operationId": "PublicSettingsController_publicSettings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Réglages métier applicables aujourd'hui",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/PublicSettingsDto"
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Read the business settings the mobile app must mirror",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
     "/api/v1/me/notifications": {
       "get": {
         "operationId": "MeNotificationsController_list",
@@ -13363,6 +13400,49 @@
         },
         "required": [
           "removed"
+        ]
+      },
+      "PublicSettingsDto": {
+        "type": "object",
+        "properties": {
+          "missionMinLeadTimeMinutes": {
+            "type": "number",
+            "example": 60,
+            "description": "Délai minimum entre la réservation et l'intervention (mission.min_lead_time_minutes)"
+          },
+          "missionCancellationNoticeHours": {
+            "type": "number",
+            "example": 6,
+            "description": "En deçà de ce préavis, une annulation est marquée « tardive » (mission.cancellation_notice_hours)"
+          },
+          "missionStartWindowMinutes": {
+            "type": "number",
+            "example": 120,
+            "description": "Avance maximale à laquelle le prestataire peut démarrer (mission.start_window_minutes)"
+          },
+          "missionPendingExpiryHours": {
+            "type": "number",
+            "example": 24,
+            "description": "Délai au bout duquel une demande sans réponse expire (mission.pending_expiry_hours)"
+          },
+          "missionAutoCloseDays": {
+            "type": "number",
+            "example": 7,
+            "description": "Délai de clôture automatique d'une mission terminée (mission.auto_close_days)"
+          },
+          "reviewsWindowDays": {
+            "type": "number",
+            "example": 14,
+            "description": "Fenêtre de dépôt d'un avis après la fin de la mission (reviews.window_days)"
+          }
+        },
+        "required": [
+          "missionMinLeadTimeMinutes",
+          "missionCancellationNoticeHours",
+          "missionStartWindowMinutes",
+          "missionPendingExpiryHours",
+          "missionAutoCloseDays",
+          "reviewsWindowDays"
         ]
       },
       "MyNotificationDto": {

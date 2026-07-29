@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { PrismaModule } from "../../common/prisma/prisma.module.js";
 import { AuditModule } from "../audit/audit.module.js";
 import { SettingsService } from "./settings.service.js";
+import { PublicSettingsController } from "./public-settings.controller.js";
 
 /**
  * Module dédié aux réglages système.
@@ -14,6 +15,10 @@ import { SettingsService } from "./settings.service.js";
  */
 @Module({
   imports: [PrismaModule, AuditModule],
+  // `GET /settings/public` vit ici et non dans le module d'administration :
+  // c'est une route publique, elle n'a rien à faire derrière les permissions
+  // du back-office.
+  controllers: [PublicSettingsController],
   providers: [SettingsService],
   exports: [SettingsService]
 })

@@ -39,6 +39,59 @@ describe("API publique", () => {
       expect(response.status).toBe(200);
     });
 
+    /**
+     * Écart n°6 du cahier des charges mobile : les six réglages qui pilotent
+     * des règles visibles par l'utilisateur ne se lisaient que par
+     * `/admin/settings`. L'application devait les coder en dur, et mentait dès
+     * que l'exploitation en modifiait un.
+     */
+    it("expose les réglages métier que l'application doit refléter", async () => {
+      const response = await api(app).get("/settings/public");
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toEqual({
+        missionMinLeadTimeMinutes: expect.any(Number),
+        missionCancellationNoticeHours: expect.any(Number),
+        missionStartWindowMinutes: expect.any(Number),
+        missionPendingExpiryHours: expect.any(Number),
+        missionAutoCloseDays: expect.any(Number),
+        reviewsWindowDays: expect.any(Number)
+      });
+    });
+
+    it("n'expose QUE ces six réglages, jamais la table complète", async () => {
+      const publics = await api(app).get("/settings/public");
+      const complets = await api(app).get("/admin/settings").set("Authorization", `Bearer ${adminToken}`);
+
+      expect(Object.keys(publics.body.data)).toHaveLength(6);
+      // La table d'administration en contient davantage : la route publique est
+      // une liste fermée, pas un miroir.
+      expect(complets.body.data.length).toBeGreaterThan(6);
+      expect(JSON.stringify(publics.body.data)).not.toContain("required_document_types");
+    });
+
+    it("reflète un réglage modifié dans le back-office", async () => {
+      const initial = await api(app).get("/settings/public");
+      const avant = initial.body.data.reviewsWindowDays as number;
+      const nouveau = avant + 3;
+
+      const miseAJour = await api(app)
+        .patch("/admin/settings/reviews.window_days")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ value: String(nouveau) });
+      expect(miseAJour.status).toBe(200);
+
+      // Le cache est vidé à l'écriture : la nouvelle valeur sort tout de suite.
+      const apres = await api(app).get("/settings/public");
+      expect(apres.body.data.reviewsWindowDays).toBe(nouveau);
+
+      // On remet la valeur d'origine pour ne pas polluer les autres suites.
+      await api(app)
+        .patch("/admin/settings/reviews.window_days")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ value: String(avant) });
+    });
+
     it("expose la vitrine d'un prestataire", async () => {
       const packs = await api(app).get(`/providers/${providerId}/service-packs`);
       const agenda = await api(app).get(`/providers/${providerId}/availabilities`);
