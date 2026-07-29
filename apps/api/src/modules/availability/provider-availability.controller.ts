@@ -6,6 +6,11 @@ import { ProviderContextService } from "../providers/provider-context.service.js
 import { Public } from "../../common/decorators/public.decorator.js";
 import type { AuthenticatedRequest } from "../../common/guards/permissions.guard.js";
 import { ok } from "../../common/contracts/api-response.js";
+import { ApiEnvelopeResponse, ApiErrorResponse } from "../../common/openapi/api-envelope.decorator.js";
+import { ProviderAvailabilitySlotDto, ProviderUnavailabilityDto, RemovedUnavailabilityResultDto } from "./response-dto.js";
+
+/** 403 commun aux routes `providers/me/*` : voir `ProviderContextService.requireProviderId`. */
+const NO_PROVIDER_PROFILE = "Authentification requise, ou ce compte n'a pas de profil prestataire";
 
 // Disponibilités côté prestataire et côté public.
 // La route « me » est déclarée avant « :id » (voir même remarque côté catalogue).
@@ -28,6 +33,9 @@ export class ProviderAvailabilityController {
   @ApiBearerAuth()
   @Put("me/availabilities")
   @ApiOperation({ summary: "Replace my weekly availability" })
+  @ApiEnvelopeResponse(ProviderAvailabilitySlotDto, { isArray: true, description: "Mon agenda hebdomadaire mis à jour" })
+  @ApiErrorResponse(400, "Jour hors 0-6, heure de fin avant l'heure de début, ou créneaux qui se chevauchent")
+  @ApiErrorResponse(403, NO_PROVIDER_PROFILE)
   async replaceMine(@Body() dto: ReplaceAvailabilitiesBodyDto, @Req() req: AuthenticatedRequest) {
     const providerId = await this.context.requireProviderId(req.user?.id);
     const slots = await this.availability.replaceAll(providerId, dto.slots, req.user?.id);
@@ -38,6 +46,9 @@ export class ProviderAvailabilityController {
   @ApiBearerAuth()
   @Post("me/unavailabilities")
   @ApiOperation({ summary: "Declare one of my exceptional unavailabilities" })
+  @ApiEnvelopeResponse(ProviderUnavailabilityDto, { status: 201, description: "Indisponibilité enregistrée" })
+  @ApiErrorResponse(400, "Date de fin avant la date de début, ou période chevauchant une absence existante")
+  @ApiErrorResponse(403, NO_PROVIDER_PROFILE)
   async addUnavailability(@Body() dto: CreateUnavailabilityBodyDto, @Req() req: AuthenticatedRequest) {
     const providerId = await this.context.requireProviderId(req.user?.id);
     return ok(
@@ -51,6 +62,9 @@ export class ProviderAvailabilityController {
   @ApiBearerAuth()
   @Delete("me/unavailabilities/:id")
   @ApiOperation({ summary: "Remove one of my unavailabilities" })
+  @ApiEnvelopeResponse(RemovedUnavailabilityResultDto, { description: "Indisponibilité supprimée" })
+  @ApiErrorResponse(403, NO_PROVIDER_PROFILE)
+  @ApiErrorResponse(404, "Indisponibilité introuvable, ou n'appartenant pas à ce prestataire")
   async removeUnavailability(@Param("id") id: string, @Req() req: AuthenticatedRequest) {
     const providerId = await this.context.requireProviderId(req.user?.id);
     // On vérifie que l'indisponibilité appartient bien au prestataire connecté,

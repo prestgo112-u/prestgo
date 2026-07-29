@@ -160,3 +160,25 @@ export class MissionThreadDto {
   @ApiProperty() messageCount!: number;
   @ApiProperty() createdAt!: Date;
 }
+
+export class MissionStatusHistoryEntryDto {
+  @ApiProperty() id!: string;
+  @ApiProperty({ nullable: true }) oldStatus!: string | null;
+  @ApiProperty() newStatus!: string;
+  @ApiProperty({ nullable: true }) reason!: string | null;
+  @ApiProperty() createdAt!: Date;
+}
+
+export class MissionRescheduleHistoryEntryDto {
+  @ApiProperty() id!: string;
+  @ApiProperty({ nullable: true }) oldScheduledAt!: Date | null;
+  @ApiProperty() newScheduledAt!: Date;
+  @ApiProperty({ nullable: true }) reason!: string | null;
+  @ApiProperty() createdAt!: Date;
+}
+
+/** Réponse de `GET /missions/:id/history`. */
+export class MissionHistoryDto {
+  @ApiProperty({ type: [MissionStatusHistoryEntryDto] }) statusHistory!: MissionStatusHistoryEntryDto[];
+  @ApiProperty({ type: [MissionRescheduleHistoryEntryDto] }) reschedules!: MissionRescheduleHistoryEntryDto[];
+}

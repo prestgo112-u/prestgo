@@ -11,6 +11,11 @@ import { ProviderContextService } from "../providers/provider-context.service.js
 import { Public } from "../../common/decorators/public.decorator.js";
 import type { AuthenticatedRequest } from "../../common/guards/permissions.guard.js";
 import { ok } from "../../common/contracts/api-response.js";
+import { ApiEnvelopeResponse, ApiErrorResponse } from "../../common/openapi/api-envelope.decorator.js";
+import { ServicePackDto, ServicePackOptionDto, ServicePackOptionListItemDto } from "./response-dto.js";
+
+/** 403 commun aux routes `providers/me/*` : voir `ProviderContextService.requireProviderId`. */
+const NO_PROVIDER_PROFILE = "Authentification requise, ou ce compte n'a pas de profil prestataire";
 
 // Catalogue public : consultable sans compte (c'est la vitrine de la plateforme).
 @ApiTags("Catalog")
@@ -45,6 +50,9 @@ export class ProviderServicePacksController {
   @ApiBearerAuth()
   @Post("me/service-packs")
   @ApiOperation({ summary: "Create one of my service packs" })
+  @ApiEnvelopeResponse(ServicePackDto, { status: 201, description: "Formule créée" })
+  @ApiErrorResponse(403, NO_PROVIDER_PROFILE)
+  @ApiErrorResponse(404, "Service introuvable pour ce prestataire")
   async createMine(@Body() dto: CreateServicePackBodyDto, @Req() req: AuthenticatedRequest) {
     const providerId = await this.context.requireProviderId(req.user?.id);
     return ok(await this.catalog.createPackForProvider(providerId, dto, req.user?.id), undefined, "Formule créée");
@@ -54,6 +62,9 @@ export class ProviderServicePacksController {
   @ApiBearerAuth()
   @Patch("me/service-packs/:id")
   @ApiOperation({ summary: "Update one of my service packs" })
+  @ApiEnvelopeResponse(ServicePackDto, { description: "Formule mise à jour" })
+  @ApiErrorResponse(403, NO_PROVIDER_PROFILE)
+  @ApiErrorResponse(404, "Formule introuvable pour ce prestataire")
   async updateMine(
     @Param("id") id: string,
     @Body() dto: UpdateServicePackBodyDto,
@@ -72,6 +83,9 @@ export class ProviderServicePacksController {
   @ApiBearerAuth()
   @Get("me/service-packs/:packId/options")
   @ApiOperation({ summary: "List the options of one of my service packs" })
+  @ApiEnvelopeResponse(ServicePackOptionListItemDto, { isArray: true, description: "Options de cette formule" })
+  @ApiErrorResponse(403, NO_PROVIDER_PROFILE)
+  @ApiErrorResponse(404, "Formule introuvable pour ce prestataire")
   async listMyPackOptions(@Param("packId") packId: string, @Req() req: AuthenticatedRequest) {
     const providerId = await this.context.requireProviderId(req.user?.id);
     return ok(await this.catalog.listPackOptionsForProvider(providerId, packId));
@@ -80,6 +94,9 @@ export class ProviderServicePacksController {
   @ApiBearerAuth()
   @Post("me/service-packs/:packId/options")
   @ApiOperation({ summary: "Add an option to one of my service packs" })
+  @ApiEnvelopeResponse(ServicePackOptionDto, { status: 201, description: "Option créée" })
+  @ApiErrorResponse(403, NO_PROVIDER_PROFILE)
+  @ApiErrorResponse(404, "Formule introuvable pour ce prestataire")
   async createMyPackOption(
     @Param("packId") packId: string,
     @Body() dto: CreateServicePackOptionBodyDto,
@@ -96,6 +113,9 @@ export class ProviderServicePacksController {
   @ApiBearerAuth()
   @Patch("me/service-pack-options/:id")
   @ApiOperation({ summary: "Update or deactivate one of my service pack options" })
+  @ApiEnvelopeResponse(ServicePackOptionDto, { description: "Option mise à jour" })
+  @ApiErrorResponse(403, NO_PROVIDER_PROFILE)
+  @ApiErrorResponse(404, "Option introuvable pour ce prestataire")
   async updateMyPackOption(
     @Param("id") id: string,
     @Body() dto: UpdateServicePackOptionBodyDto,
