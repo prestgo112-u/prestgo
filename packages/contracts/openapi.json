@@ -184,7 +184,16 @@
     "/api/v1/auth/otp/verify": {
       "post": {
         "operationId": "AuthController_verifyOtp",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "user-agent",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -196,11 +205,17 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Code vérifié ; jetons émis si purpose=login"
+          },
           "400": {
             "description": "Invalid or expired code"
+          },
+          "401": {
+            "description": "purpose=login : code valide, mais aucun compte actif ne correspond"
           }
         },
-        "summary": "Verify a one-time code",
+        "summary": "Verify a one-time code (purpose=login also completes a passwordless login)",
         "tags": [
           "auth"
         ]

@@ -138,6 +138,80 @@ describe("authentification", () => {
     });
   });
 
+  /**
+   * Écart n°2 du cahier des charges mobile, décision B : un compte inscrit
+   * avec un numéro de téléphone seul (sans email) ne pouvait pas se
+   * connecter — `LoginBodyDto` n'accepte qu'un email. Le motif OTP `login`
+   * figurait déjà dans `OTP_PURPOSES` mais aucune route ne l'exploitait.
+   */
+  describe("connexion par téléphone, sans mot de passe (§2.3, décision B)", () => {
+    const phone = uniquePhone(50);
+
+    beforeAll(async () => {
+      // Compte SANS email : exactement le cul-de-sac que ce parcours corrige.
+      const inscription = await api(app)
+        .post("/auth/register")
+        .send({ phone, password: "motdepasse1", firstName: "Aya" });
+      expect(inscription.status).toBe(201);
+
+      const envoi = await api(app).post("/auth/otp/send").send({ target: phone, purpose: "phone_verification" });
+      const code = envoi.body.data.devCode as string;
+      const verif = await api(app)
+        .post("/auth/otp/verify")
+        .send({ target: phone, code, purpose: "phone_verification" });
+      expect(verif.body.data.activated).toBe(true);
+    });
+
+    it("connecte par OTP purpose=login et renvoie un jeton réellement utilisable", async () => {
+      const envoi = await api(app).post("/auth/otp/send").send({ target: phone, purpose: "login" });
+      expect(envoi.status).toBe(200);
+      const code = envoi.body.data.devCode as string;
+
+      const connexion = await api(app).post("/auth/otp/verify").send({ target: phone, code, purpose: "login" });
+
+      expect(connexion.status).toBe(200);
+      expect(connexion.body.message).toBe("Authenticated");
+      expect(connexion.body.data.accessToken).toBeTypeOf("string");
+      expect(connexion.body.data.refreshToken).toBeTypeOf("string");
+      // Ni `verified` ni `activated` : la forme est celle de /auth/login, pas
+      // celle des deux autres motifs.
+      expect(connexion.body.data.verified).toBeUndefined();
+
+      const profil = await api(app)
+        .get("/me")
+        .set("Authorization", `Bearer ${connexion.body.data.accessToken}`);
+      expect(profil.status).toBe(200);
+      expect(profil.body.data.phone).toBe(phone);
+    });
+
+    it("refuse un mauvais code, sans émettre de jeton", async () => {
+      await api(app).post("/auth/otp/send").send({ target: phone, purpose: "login" });
+      const response = await api(app)
+        .post("/auth/otp/verify")
+        .send({ target: phone, code: "000000", purpose: "login" });
+
+      expect(response.status).toBe(400);
+      expect(response.body.data).toBeUndefined();
+    });
+
+    /**
+     * `otp/send` répond à l'identique qu'un compte existe ou non (§2.1) : rien
+     * ne fuite tant que le code n'est pas soumis. Mais un code vérifié PROUVE
+     * la maîtrise du téléphone — la 401, ici, ne révèle donc rien de plus.
+     */
+    it("refuse proprement un numéro qui ne correspond à aucun compte", async () => {
+      const inconnu = uniquePhone(999);
+
+      const envoi = await api(app).post("/auth/otp/send").send({ target: inconnu, purpose: "login" });
+      expect(envoi.status).toBe(200);
+      const code = envoi.body.data.devCode as string;
+
+      const response = await api(app).post("/auth/otp/verify").send({ target: inconnu, code, purpose: "login" });
+      expect(response.status).toBe(401);
+      expect(response.body.message).toBe("Account is not active");
+    });
+  });
+
   describe("mot de passe oublié", () => {
     const email = uniqueEmail("oubli");
 

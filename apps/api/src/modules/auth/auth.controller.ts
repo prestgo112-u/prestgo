@@ -1,4 +1,4 @@
-import { Body, Controller, Headers, HttpCode, Post } from "@nestjs/common";
+import { Body, Controller, Headers, HttpCode, Post, UnauthorizedException } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import { THROTTLE_LOGIN, THROTTLE_MODERATE, THROTTLE_SENSITIVE } from "../../common/config/throttle.config.js";
@@ -100,14 +100,51 @@ export class AuthController {
     return ok(result, undefined, result.message);
   }
 
+  /**
+   * POST /auth/otp/verify — vérifie un code, ou connecte par téléphone.
+   *
+   * `purpose: "login"` couvre l'écart n°2 du cahier des charges mobile : un
+   * compte inscrit avec un numéro de téléphone seul (sans email) n'avait
+   * aucun moyen de se connecter, `LoginBodyDto` n'acceptant qu'un email.
+   * `login` figurait pourtant déjà parmi les motifs acceptés par
+   * `SendOtpBodyDto`/`VerifyOtpBodyDto` — l'intention existait, la route non.
+   *
+   * Le parcours : `POST /auth/otp/send` avec `purpose: "login"` sur le
+   * numéro, puis ce même appel avec le code reçu renvoie un couple de jetons,
+   * exactement comme `POST /auth/login`, mais sans mot de passe.
+   */
   @Throttle(THROTTLE_MODERATE)
   @Post("otp/verify")
   @HttpCode(200)
-  @ApiOperation({ summary: "Verify a one-time code" })
+  @ApiOperation({ summary: "Verify a one-time code (purpose=login also completes a passwordless login)" })
+  @ApiResponse({ status: 200, description: "Code vérifié ; jetons émis si purpose=login" })
   @ApiResponse({ status: 400, description: "Invalid or expired code" })
-  async verifyOtp(@Body() dto: VerifyOtpBodyDto) {
-    const result = await this.account.verifyOtp(dto.target, dto.code, dto.purpose ?? "phone_verification");
-    return ok(result, undefined, result.activated ? "Compte activé" : "Code vérifié");
+  @ApiResponse({ status: 401, description: "purpose=login : code valide, mais aucun compte actif ne correspond" })
+  async verifyOtp(@Body() dto: VerifyOtpBodyDto, @Headers("user-agent") userAgent?: string) {
+    const purpose = dto.purpose ?? "phone_verification";
+    const result = await this.account.verifyOtp(dto.target, dto.code, purpose);
+
+    if (purpose === "login") {
+      // Le code est déjà prouvé valide (sinon `verifyOtp` aurait levé une
+      // exception) : reste à savoir si un compte UTILISABLE lui correspond.
+      // Le révéler ici n'ouvre rien : avoir reçu et ressaisi le bon code
+      // prouve déjà la maîtrise du téléphone ou de l'email, exactement ce que
+      // `/auth/login` demande par mot de passe — contrairement à
+      // `forgot-password` ou `otp/send`, où la réponse doit rester identique
+      // qu'un compte existe ou non.
+      if (!result.userId || result.userStatus !== "active") {
+        throw new UnauthorizedException("Account is not active");
+      }
+      const tokens = await this.authService.issueTokensFor(result.userId, userAgent);
+      return ok({ accessToken: tokens.accessToken, refreshToken: tokens.refreshToken }, undefined, "Authenticated");
+    }
+
+    // Forme inchangée pour les deux autres motifs : { verified, activated }.
+    return ok(
+      { verified: result.verified, activated: result.activated },
+      undefined,
+      result.activated ? "Compte activé" : "Code vérifié"
+    );
   }
 
   @Post("logout")

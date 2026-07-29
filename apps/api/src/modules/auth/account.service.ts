@@ -302,6 +302,16 @@ export class AccountService {
    *
    * Si le code correspond à un compte au statut `pending`, celui-ci devient
    * `active` : c'est le parcours normal d'activation après inscription.
+   *
+   * `userId` et `userStatus` sont renvoyés en plus de `verified`/`activated`
+   * pour que l'appelant (`AuthController`) puisse, lorsque `purpose === "login"`,
+   * décider d'émettre ou non un couple de jetons — voir §2.3 du cahier des
+   * charges mobile, écart n°2 : la connexion par téléphone n'avait aucun
+   * chemin, alors que `login` figure déjà parmi les motifs acceptés par
+   * `SendOtpBodyDto`/`VerifyOtpBodyDto`. Ce service reste sans connaissance de
+   * `AuthService` : émettre les jetons est laissé au contrôleur, qui a déjà
+   * les deux services sous la main, plutôt que de créer une dépendance
+   * `AccountService → AuthService` qui n'existait pas.
    */
   async verifyOtp(target: string, code: string, purpose: string) {
     const normalized = target.trim();
@@ -335,18 +345,23 @@ export class AccountService {
     });
 
     let activated = false;
+    let userId: string | undefined;
+    let userStatus: string | undefined;
     if (user) {
       const verifiedField = user.phone === normalized ? "phoneVerifiedAt" : "emailVerifiedAt";
-      await this.prisma.user.update({
+      const updated = await this.prisma.user.update({
         where: { id: user.id },
         data: {
           [verifiedField]: new Date(),
           // On n'active que depuis `pending` : un compte suspendu ne doit pas
           // pouvoir se réactiver tout seul en vérifiant son téléphone.
           ...(user.status === "pending" ? { status: "active" as const } : {})
-        }
+        },
+        select: { id: true, status: true }
       });
       activated = user.status === "pending";
+      userId = updated.id;
+      userStatus = updated.status;
 
       await this.audit.record({
         actorId: user.id,
@@ -357,6 +372,6 @@ export class AccountService {
       });
     }
 
-    return { verified: true, activated };
+    return { verified: true, activated, userId, userStatus };
   }
 }
