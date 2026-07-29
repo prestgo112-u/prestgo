@@ -339,7 +339,7 @@
             "bearer": []
           }
         ],
-        "summary": "Download the file content if authorized",
+        "summary": "Download the file content (public files need no token)",
         "tags": [
           "Files"
         ]

@@ -106,6 +106,87 @@ describe("fichiers", () => {
       expect((await api(app).get(`/files/${id}`)).status).toBe(401);
     });
 
+    /**
+     * Écart n°5 du cahier des charges mobile.
+     *
+     * La recherche et les fiches publiques sont consultables sans compte et
+     * renvoient `avatarFileId` ; tant que `/content` exigeait un jeton, ces
+     * identifiants ne menaient à rien et l'écran d'accueil restait sans image.
+     *
+     * L'ouverture ne vaut QUE pour la visibilité `public` — celle qu'un
+     * prestataire pose explicitement en publiant une réalisation.
+     */
+    describe("contenu d'un fichier public (sans compte)", () => {
+      let fichierPublic: string;
+
+      beforeAll(async () => {
+        // Un fichier ne devient `public` que par une décision explicite du
+        // prestataire : ici, la publication d'une réalisation de portfolio.
+        const image = await api(app)
+          .post("/files/upload")
+          .set("Authorization", `Bearer ${providerToken}`)
+          .attach("file", Buffer.from("image-de-realisation"), {
+            filename: "chantier.png",
+            contentType: "image/png"
+          });
+
+        fichierPublic = image.body.data.id as string;
+
+        const publication = await api(app)
+          .post("/providers/me/portfolio")
+          .set("Authorization", `Bearer ${providerToken}`)
+          .send({ fileId: fichierPublic, title: "Réfection salle de bain" });
+        expect(publication.status).toBe(201);
+      });
+
+      it("sert le contenu d'un fichier public sans aucun jeton", async () => {
+        const response = await api(app).get(`/files/${fichierPublic}/content`);
+
+        expect(response.status).toBe(200);
+        expect(response.headers["content-type"]).toContain("image/png");
+      });
+
+      it("sert toujours ce fichier à un utilisateur connecté", async () => {
+        const response = await api(app)
+          .get(`/files/${fichierPublic}/content`)
+          .set("Authorization", `Bearer ${adminToken}`);
+        expect(response.status).toBe(200);
+      });
+
+      it("tolère un jeton invalide et retombe sur l'accès anonyme", async () => {
+        // Un jeton périmé en cours de défilement ne doit pas casser l'affichage
+        // d'un avatar, qui est public de toute façon.
+        const response = await api(app)
+          .get(`/files/${fichierPublic}/content`)
+          .set("Authorization", "Bearer jeton-totalement-invalide");
+        expect(response.status).toBe(200);
+      });
+
+      it("refuse en 403 le contenu d'un fichier NON public sans jeton", async () => {
+        const prive = await upload(adminToken, "confidentiel.txt", "secret");
+
+        const response = await api(app).get(`/files/${prive}/content`);
+        // 403 et non 401 : la route est publique, c'est la POLITIQUE d'accès
+        // qui refuse, pas l'absence d'authentification.
+        expect(response.status).toBe(403);
+        expect(response.body.success).toBe(false);
+      });
+
+      it("laisse le propriétaire lire son propre fichier non public", async () => {
+        const prive = await upload(adminToken, "a-moi.txt", "mon contenu");
+
+        const response = await api(app)
+          .get(`/files/${prive}/content`)
+          .set("Authorization", `Bearer ${adminToken}`);
+        expect(response.status).toBe(200);
+        expect(response.text).toContain("mon contenu");
+      });
+
+      it("garde les MÉTADONNÉES protégées : /files/:id exige toujours un jeton", async () => {
+        expect((await api(app).get(`/files/${fichierPublic}`)).status).toBe(401);
+      });
+    });
+
     it("renvoie 404 sur un fichier désactivé", async () => {
       const id = await upload(adminToken, "temporaire.txt");
 

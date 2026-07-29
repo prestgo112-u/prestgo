@@ -20,6 +20,8 @@ import { randomUUID } from "node:crypto";
 import { extname } from "node:path";
 import { PrismaService } from "../../common/prisma/prisma.service.js";
 import type { AuthenticatedRequest } from "../../common/guards/permissions.guard.js";
+import { Public } from "../../common/decorators/public.decorator.js";
+import { AuthService } from "../auth/auth.service.js";
 import { ok } from "../../common/contracts/api-response.js";
 import { canAccessFile, type FileVisibility } from "./file-access.policy.js";
 import { FileStorageService } from "./file-storage.service.js";
@@ -50,7 +52,8 @@ export const ALLOWED_MIME_TYPES = [
 export class FilesController {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly storage: FileStorageService
+    private readonly storage: FileStorageService,
+    private readonly auth: AuthService
   ) {}
 
   // POST /files/upload — envoi réel d'un fichier (multipart/form-data).
@@ -108,13 +111,28 @@ export class FilesController {
     return ok(file);
   }
 
-  // GET /files/:id/content — renvoie le contenu réel du fichier.
-  // C'est cette route qui permet enfin à un agent de CONSULTER un justificatif
-  // avant de l'approuver ou de le rejeter.
+  /**
+   * GET /files/:id/content — renvoie le contenu réel du fichier.
+   *
+   * C'est cette route qui permet à un agent de CONSULTER un justificatif avant
+   * de l'approuver, et à l'application mobile d'afficher une photo de profil ou
+   * une réalisation de portfolio.
+   *
+   * `@Public()` : la recherche de prestataires et les fiches publiques sont
+   * consultables SANS COMPTE et renvoient `avatarFileId`. Tant que cette route
+   * exigeait un jeton, ces identifiants ne menaient à rien pour un visiteur —
+   * l'écran d'accueil restait sans aucune image.
+   *
+   * Ce n'est PAS une ouverture générale : `canAccessFile` reste seul juge, et
+   * elle n'autorise l'anonyme que sur la visibilité `public` — celle que le
+   * prestataire pose explicitement en publiant un avatar ou un portfolio. Un
+   * fichier `restricted` ou `sensitive` reste refusé (403), avec ou sans jeton.
+   */
+  @Public()
   @Get(":id/content")
-  @ApiOperation({ summary: "Download the file content if authorized" })
+  @ApiOperation({ summary: "Download the file content (public files need no token)" })
   async download(@Param("id") id: string, @Req() req: AuthenticatedRequest, @Res() res: Response) {
-    const file = await this.loadAuthorized(id, req);
+    const file = await this.loadAuthorized(id, req, await this.resolveOptionalActor(req));
 
     let content: Buffer;
     try {
@@ -148,7 +166,11 @@ export class FilesController {
 
   // Charge un fichier et vérifie les droits d'accès. Factorisé car les trois
   // routes de lecture appliquent exactement la même règle.
-  private async loadAuthorized(id: string, req: AuthenticatedRequest) {
+  //
+  // `actor` n'est fourni que par la route publique, qui résout elle-même le
+  // porteur du jeton. Les routes protégées s'appuient sur `req.user`, déjà
+  // rempli par la garde globale.
+  private async loadAuthorized(id: string, req: AuthenticatedRequest, actor = req.user) {
     const file = await this.prisma.file.findUnique({ where: { id } });
     if (!file || file.disabledAt) {
       throw new NotFoundException("Fichier introuvable");
@@ -156,13 +178,44 @@ export class FilesController {
 
     const allowed = canAccessFile(
       { visibility: file.visibility as FileVisibility, ownerId: file.ownerId },
-      req.user
+      actor
     );
     if (!allowed) {
       throw new ForbiddenException("Accès au fichier refusé");
     }
 
     return file;
+  }
+
+  /**
+   * Identité du demandeur sur une route `@Public()`.
+   *
+   * La garde globale sort AVANT de remplir `request.user` quand la route est
+   * publique : sans cette résolution, le propriétaire d'un justificatif se
+   * verrait refuser son propre fichier. On relit donc l'en-tête nous-mêmes.
+   *
+   * Un jeton absent, expiré ou invalide ne provoque PAS de 401 : le demandeur
+   * est simplement traité comme anonyme, et n'obtiendra que les fichiers
+   * `public`. C'est le comportement voulu pour une balise `<img>` — un jeton
+   * périmé en cours de défilement ne doit pas casser l'affichage des avatars,
+   * qui sont publics de toute façon.
+   */
+  private async resolveOptionalActor(req: AuthenticatedRequest): Promise<AuthenticatedRequest["user"]> {
+    if (req.user) {
+      return req.user;
+    }
+
+    const [scheme, token] = (req.headers?.authorization as string | undefined)?.split(" ") ?? [];
+    if (scheme !== "Bearer" || !token) {
+      return undefined;
+    }
+
+    try {
+      const payload = await this.auth.verifyAccessToken(token);
+      return { id: payload.sub, roles: payload.roles, permissions: payload.permissions, sessionId: payload.sid };
+    } catch {
+      return undefined;
+    }
   }
 }
 
