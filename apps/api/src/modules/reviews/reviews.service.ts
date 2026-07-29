@@ -26,7 +26,7 @@ export class ReviewsService {
     const limit = Math.min(100, Math.max(1, Number(query.limit ?? 20)));
     const where = { status: "published" as const, mission: { providerId } };
 
-    const [rows, total, stats] = await Promise.all([
+    const [rows, total] = await Promise.all([
       this.prisma.review.findMany({
         where,
         select: { id: true, rating: true, comment: true, createdAt: true },
@@ -34,21 +34,20 @@ export class ReviewsService {
         skip: (page - 1) * limit,
         take: limit
       }),
-      this.prisma.review.count({ where }),
-      this.prisma.review.aggregate({ where, _avg: { rating: true } })
+      this.prisma.review.count({ where })
     ]);
 
-    return {
-      data: {
-        // La moyenne est arrondie au dixième (ex. 4,3 sur 5).
-        averageRating: stats._avg.rating != null ? Math.round(stats._avg.rating * 10) / 10 : null,
-        totalReviews: total,
-        reviews: rows
-      },
-      total,
-      page,
-      limit
-    };
+    // `data` est un TABLEAU, comme toute autre liste paginée de l'API, et la
+    // pagination tient dans `meta`. Cette route renvoyait auparavant un objet
+    // `{ averageRating, totalReviews, reviews }` : elle était la seule du
+    // périmètre à imposer un modèle client à part.
+    //
+    // Les deux agrégats n'ont pas été déplacés parce qu'ils font DOUBLON :
+    //   - `totalReviews` valait exactement `meta.total` (même `where`) ;
+    //   - `averageRating` recalculait `provider_profiles.score`, à la même
+    //     clause près, déjà exposé par `GET /providers/:id/public` (avec
+    //     `ratingDistribution`), l'écran d'où l'on ouvre cette liste.
+    return { data: rows, total, page, limit };
   }
 
   // Liste paginée des avis, filtrable par statut (ex. voir les "reported").

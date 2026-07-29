@@ -100,8 +100,43 @@ describe("API publique", () => {
       expect(packs.status).toBe(200);
       expect(agenda.status).toBe(200);
       expect(avis.status).toBe(200);
-      expect(avis.body.data).toHaveProperty("averageRating");
-      expect(avis.body.data).toHaveProperty("totalReviews");
+    });
+
+    /**
+     * Écart n°15 du cahier des charges mobile : cette route renvoyait un OBJET
+     * `{ averageRating, totalReviews, reviews }` tout en portant un `meta` de
+     * pagination — seule route paginée du périmètre dont `data` n'était pas un
+     * tableau, donc seule à imposer un modèle client à part.
+     */
+    it("renvoie les avis comme toute autre liste paginée : data en tableau, pagination dans meta", async () => {
+      const avis = await api(app).get(`/providers/${providerId}/reviews`);
+
+      expect(avis.status).toBe(200);
+      expect(Array.isArray(avis.body.data)).toBe(true);
+      expect(avis.body.meta).toMatchObject({
+        page: expect.any(Number),
+        limit: expect.any(Number),
+        total: expect.any(Number)
+      });
+
+      // Les agrégats ne sont plus dans `data` : ils faisaient doublon.
+      expect(avis.body.data).not.toHaveProperty("averageRating");
+      expect(avis.body.data).not.toHaveProperty("reviews");
+    });
+
+    it("pagine réellement les avis publiés", async () => {
+      const page = await api(app).get(`/providers/${providerId}/reviews?page=1&limit=1`);
+
+      expect(page.status).toBe(200);
+      expect(page.body.meta.limit).toBe(1);
+      expect(page.body.data.length).toBeLessThanOrEqual(1);
+
+      // Chaque avis expose la forme publique, sans donnée interne.
+      for (const avis of page.body.data) {
+        expect(Object.keys(avis).sort()).toEqual(["comment", "createdAt", "id", "rating"]);
+        expect(avis.rating).toBeGreaterThanOrEqual(1);
+        expect(avis.rating).toBeLessThanOrEqual(5);
+      }
     });
   });
 
