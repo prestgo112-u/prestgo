@@ -1,9 +1,11 @@
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { ok } from "../../common/contracts/api-response.js";
+import { ApiEnvelopeResponse, ApiErrorResponse } from "../../common/openapi/api-envelope.decorator.js";
 import { Public } from "../../common/decorators/public.decorator.js";
 import { ProviderSearchQueryDto } from "./search-dto.js";
 import { ProviderSearchService } from "./provider-search.service.js";
+import { ProviderPublicProfileDto, ProviderSearchItemDto } from "./response-dto.js";
 
 /**
  * Recherche et fiche publique des prestataires (§7).
@@ -30,6 +32,12 @@ export class ProviderSearchController {
   @Public()
   @Get("search")
   @ApiOperation({ summary: "Search available providers by service, location and time slot" })
+  @ApiEnvelopeResponse(ProviderSearchItemDto, {
+    isArray: true,
+    paginated: true,
+    description: "Prestataires approuvés, actifs et disponibles correspondant aux filtres"
+  })
+  @ApiErrorResponse(400, "Combinaison de filtres invalide (tri par distance sans géoposition, date sans heure, ou l'inverse)")
   async searchProviders(@Query() query: ProviderSearchQueryDto) {
     const result = await this.search.search(query);
     return ok(result.data, { page: result.page, limit: result.limit, total: result.total });
@@ -44,6 +52,8 @@ export class ProviderSearchController {
   @Public()
   @Get(":id/public")
   @ApiOperation({ summary: "Get the full public profile of a provider" })
+  @ApiEnvelopeResponse(ProviderPublicProfileDto, { description: "Fiche publique complète" })
+  @ApiErrorResponse(404, "Prestataire introuvable, ou non approuvé")
   async publicProfile(@Param("id") id: string) {
     return ok(await this.search.publicProfile(id));
   }
