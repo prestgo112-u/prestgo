@@ -3,6 +3,7 @@ import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module.js";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter.js";
+import { validationExceptionFactory } from "./common/pipes/validation-exception.factory.js";
 import { setupOpenApi } from "./common/openapi/openapi.setup.js";
 
 async function bootstrap(): Promise<void> {
@@ -12,7 +13,11 @@ async function bootstrap(): Promise<void> {
     new ValidationPipe({
       forbidUnknownValues: true,
       transform: true,
-      whitelist: true
+      whitelist: true,
+      // Sans cette fabrique, les erreurs de validation sortent sans le nom du
+      // champ fautif : le client ne peut pas placer le message sous le bon
+      // champ de formulaire. Voir `validation-exception.factory.ts`.
+      exceptionFactory: validationExceptionFactory
     })
   );
   // Filtre global : toutes les erreurs sortent au format standard du CDC

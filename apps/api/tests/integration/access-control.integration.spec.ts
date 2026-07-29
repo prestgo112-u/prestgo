@@ -200,13 +200,17 @@ describe("contrôle d'accès", () => {
      * connaître son `providerId` avant même d'afficher l'écran.
      */
     it("laisse le prestataire relire son propre agenda, sans passer par son providerId", async () => {
+      // On réécrit VOLONTAIREMENT le même agenda que le test précédent : les
+      // suites tournent en parallèle sur la même base et partagent ce
+      // prestataire. Poser d'autres jours ici retirerait le lundi, dont
+      // `mission-flow` a besoin pour sa recherche par créneau.
       await api(app)
         .put("/providers/me/availabilities")
         .set("Authorization", `Bearer ${providerToken}`)
         .send({
           slots: [
-            { weekday: 2, startTime: "09:00", endTime: "13:00" },
-            { weekday: 4, startTime: "15:00", endTime: "17:30" }
+            { weekday: 1, startTime: "08:00", endTime: "12:00" },
+            { weekday: 3, startTime: "14:00", endTime: "18:00" }
           ]
         });
 
@@ -217,8 +221,8 @@ describe("contrôle d'accès", () => {
       expect(relecture.status).toBe(200);
       // Miroir exact de ce que le PUT vient d'enregistrer.
       expect(relecture.body.data).toHaveLength(2);
-      expect(relecture.body.data.map((s: { weekday: number }) => s.weekday)).toEqual([2, 4]);
-      expect(relecture.body.data[0]).toMatchObject({ weekday: 2, startTime: "09:00", endTime: "13:00" });
+      expect(relecture.body.data.map((s: { weekday: number }) => s.weekday)).toEqual([1, 3]);
+      expect(relecture.body.data[0]).toMatchObject({ weekday: 1, startTime: "08:00", endTime: "12:00" });
     });
 
     it("refuse la relecture de l'agenda à un compte sans profil prestataire", async () => {

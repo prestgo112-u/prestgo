@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import request from "supertest";
 import { AppModule } from "../../src/app.module.js";
 import { HttpExceptionFilter } from "../../src/common/filters/http-exception.filter.js";
+import { validationExceptionFactory } from "../../src/common/pipes/validation-exception.factory.js";
 
 /**
  * Démarre la VRAIE application NestJS pour les tests.
@@ -24,7 +25,10 @@ export async function createTestApp(): Promise<INestApplication> {
     new ValidationPipe({
       forbidUnknownValues: true,
       transform: true,
-      whitelist: true
+      whitelist: true,
+      // Doit rester identique à `main.ts` : sans cette fabrique, les tests
+      // valideraient un format d'erreur que la production ne produit pas.
+      exceptionFactory: validationExceptionFactory
     })
   );
   app.useGlobalFilters(new HttpExceptionFilter());

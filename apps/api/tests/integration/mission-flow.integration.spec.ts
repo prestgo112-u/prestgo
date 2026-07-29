@@ -883,8 +883,19 @@ describe("boucle de valeur mission", () => {
       expect(inApp.length).toBeGreaterThanOrEqual(3);
 
       // …mais un seul push, regroupé sur la minute.
+      //
+      // Le décompte est borné au DESTINATAIRE : le regroupement se fait par fil
+      // (`groupKey: thread:<id>`), et les suites tournent en parallèle sur la
+      // même base. Sans ce filtre, un push émis au même instant pour un autre
+      // utilisateur, dans une autre suite, faisait échouer ce test.
+      const moi = await api(app).get("/me").set(...auth(providerToken));
       const pushs = await prisma.notification.count({
-        where: { type: "chat.message", channel: "push", createdAt: { gte: new Date(Date.now() - 60_000) } }
+        where: {
+          userId: moi.body.data.id as string,
+          type: "chat.message",
+          channel: "push",
+          createdAt: { gte: new Date(Date.now() - 60_000) }
+        }
       });
       expect(pushs).toBe(1);
     });

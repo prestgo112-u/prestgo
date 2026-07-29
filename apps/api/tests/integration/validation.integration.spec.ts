@@ -149,6 +149,98 @@ describe("validation et format des réponses", () => {
       expect(response.body.meta.correlationId).toBeTypeOf("string");
     });
 
+    /**
+     * Écart n°13 du cahier des charges mobile.
+     *
+     * `errors[]` sortait sans `field` : l'application ne pouvait pas placer le
+     * message sous le bon champ de formulaire, alors que `field` fait partie du
+     * contrat depuis l'origine et que le filtre global sait déjà le lire.
+     */
+    describe("nom du champ fautif dans errors[] (§5.1)", () => {
+      it("le renseigne sur POST /auth/register", async () => {
+        const response = await api(app)
+          .post("/auth/register")
+          .send({ email: "pas-un-email", password: "court" });
+
+        expect(response.status).toBe(400);
+        const champs = response.body.errors.map((e: { field: string }) => e.field);
+        expect(champs).toContain("email");
+        expect(champs).toContain("password");
+
+        const surEmail = response.body.errors.find((e: { field: string }) => e.field === "email");
+        expect(surEmail.code).toBe("validation_error");
+        expect(surEmail.message).toBe("Adresse email invalide");
+      });
+
+      it("le renseigne sur POST /me/addresses", async () => {
+        const response = await api(app)
+          .post("/me/addresses")
+          .set(...bearer())
+          .send({ label: "", city: "Abidjan", latitude: 999, longitude: -4 });
+
+        expect(response.status).toBe(400);
+        const champs = response.body.errors.map((e: { field: string }) => e.field);
+        expect(champs).toContain("label");
+        expect(champs).toContain("latitude");
+        // Les champs valides ne produisent aucune entrée.
+        expect(champs).not.toContain("city");
+        expect(champs).not.toContain("longitude");
+      });
+
+      it("le renseigne sur POST /missions", async () => {
+        const response = await api(app)
+          .post("/missions")
+          .set(...bearer())
+          .send({
+            providerId: "pas-un-uuid",
+            packId: "pas-un-uuid-non-plus",
+            scheduledAt: "pas-une-date",
+            addressId: "toujours-pas"
+          });
+
+        expect(response.status).toBe(400);
+        const champs = response.body.errors.map((e: { field: string }) => e.field);
+        expect(champs).toEqual(
+          expect.arrayContaining(["providerId", "packId", "scheduledAt", "addressId"])
+        );
+      });
+
+      /**
+       * Un tableau d'objets imbriqués doit dire QUEL élément est en cause :
+       * « startTime invalide » sans indice de position serait inutilisable sur
+       * une grille de sept jours.
+       */
+      it("construit un chemin complet pour un champ imbriqué", async () => {
+        const providerToken = await login(app, SEED_USERS.provider);
+
+        const response = await api(app)
+          .put("/providers/me/availabilities")
+          .set("Authorization", `Bearer ${providerToken}`)
+          .send({
+            slots: [
+              { weekday: 1, startTime: "08:00", endTime: "12:00" },
+              { weekday: 9, startTime: "pas-une-heure", endTime: "18:00" }
+            ]
+          });
+
+        expect(response.status).toBe(400);
+        const champs = response.body.errors.map((e: { field: string }) => e.field);
+        // Le deuxième créneau (index 1) est le fautif, sur deux champs.
+        expect(champs).toContain("slots.1.weekday");
+        expect(champs).toContain("slots.1.startTime");
+        // Le premier créneau est valide : il n'apparaît pas.
+        expect(champs.some((c: string) => c.startsWith("slots.0."))).toBe(false);
+      });
+
+      it("garde le message de tête identique au premier de errors[]", async () => {
+        const response = await api(app).post("/auth/register").send({ email: "pas-un-email", password: "court" });
+
+        // Contrat historique préservé : les clients qui ne lisent que `message`
+        // voient exactement ce qu'ils voyaient avant.
+        expect(response.body.message).toBe(response.body.errors[0].message);
+      });
+    });
+
     it("ne laisse pas fuiter de détail technique sur une erreur interne", async () => {
       // Un identifiant au mauvais format fait échouer la requête en base.
       const response = await api(app)
