@@ -6,21 +6,41 @@ n'a été exécutée**, aucun secret n'a été renseigné ni inventé — c'est 
 qui a accès aux comptes fournisseurs et à l'environnement de production de
 suivre ces étapes.
 
-Deux briques ont leur **code déjà écrit, testé et branché**, mais restent
-**inactives dans l'environnement actuel** (constaté lors d'un audit du 29
-juillet 2026) : la file d'attente persistante (Redis/BullMQ) et les transports
-réels de notification (SMS, push). Tant qu'elles ne sont pas activées, le
-système fonctionne — mais en mode dégradé silencieux, décrit ci-dessous.
+Deux briques ont leur **code déjà écrit, testé et branché**. Constaté lors d'un
+audit du 29 juillet 2026 : la file d'attente persistante (Redis/BullMQ) était
+inactive ; **elle a depuis été activée dans l'environnement de développement
+local** (§1.1 mis à jour le même jour). Les transports réels de notification
+(SMS, push) restent inactifs, faute de comptes fournisseurs — §2 inchangé.
 
 ---
 
 ## 1. Redis + BullMQ
 
-### 1.1 État actuel
+### 1.1 État actuel — MIS À JOUR le 29 juillet 2026
 
-- `apps/api/.env` contient `QUEUE_DRIVER=memory` (forcé explicitement).
-- Aucun processus Redis n'écoute sur `localhost:6379` dans l'environnement où
-  l'audit a été fait.
+Redis était déjà installé sur la machine de développement
+(`C:\Redis`, port Windows officieux, service Windows nommé `redis`) mais
+`QUEUE_DRIVER` restait forcé à `memory`. Activé en basculant `.env` sur
+`QUEUE_DRIVER=bullmq` (§1.3 ci-dessous) — vérifié fonctionnel (§1.4).
+
+**Point de vigilance découvert à l'activation :** la version installée est
+**Redis 5.0.14.1**. BullMQ (via `ioredis`) émet un avertissement au démarrage :
+```
+It is highly recommended to use a minimum Redis version of 6.2.0
+             Current: 5.0.14.1
+```
+Ce n'est pas bloquant pour l'usage actuel (notifications, jobs planifiés — pas
+de fonctionnalité BullMQ avancée type "sandboxed processors" ou certaines
+commandes de streaming) : la connexion s'établit, les tâches sont traitées.
+Mais avant une mise en production, il est recommandé de monter vers Redis
+6.2+ pour rester dans le périmètre officiellement supporté par BullMQ.
+
+*Ce qui suit décrit l'état où Redis n'est PAS encore configuré — pertinent
+pour tout autre environnement (production, préproduction) où cette activation
+n'a pas encore été faite.*
+
+- Sans Redis actif : `apps/api/.env` contient `QUEUE_DRIVER=memory` (forcé
+  explicitement), ou aucun processus Redis n'écoute sur `localhost:6379`.
 - **Conséquence concrète :** les notifications et les 5 jobs planifiés du §14
   (`expireMissions`, `autoCloseMissions`, `missionReminders`, `reviewReminders`,
   `cleanupTokens` — voir `apps/api/src/modules/jobs/scheduled-jobs.service.ts:16-22`)
