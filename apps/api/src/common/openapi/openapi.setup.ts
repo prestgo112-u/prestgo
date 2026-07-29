@@ -9,7 +9,13 @@ export function setupOpenApi(app: INestApplication): void {
     .setDescription("Versioned contract for PRESTGO V1 backend and internal admin workflows.")
     .setVersion("1.0.0")
     .addBearerAuth()
-    .addServer("/api/v1", "API v1")
+    // Pas de `.addServer("/api/v1", ...)` ici : `app.setGlobalPrefix("api/v1")`
+    // (main.ts) fait déjà apparaître ce préfixe dans CHAQUE chemin généré par
+    // Swagger (ex. `/api/v1/me`). Déclarer un serveur avec ce même préfixe
+    // aurait doublé le préfixe pour tout client qui concatène
+    // `server.url + path` — exactement le défaut relevé lors de l'audit du
+    // 29 juillet 2026. Sans `addServer`, Swagger UI utilise l'origine
+    // courante comme base, et les chemins déjà complets fonctionnent tels quels.
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
