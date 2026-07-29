@@ -669,6 +669,60 @@ describe("boucle de valeur mission", () => {
     });
 
     /**
+     * Écart n°4 du cahier des charges mobile : la pastille de l'onglet
+     * messagerie n'avait pas de compteur global, seulement un `unreadCount` par
+     * fil. Sommer la première page donnait un total faux dès qu'un utilisateur
+     * dépassait la taille de page.
+     */
+    it("compte mes messages non lus tous fils confondus, sans compter les miens", async () => {
+      const threads = await api(app).get("/me/threads").set(...auth(clientToken));
+      const threadId = threads.body.data[0].id;
+
+      // On part d'un état propre des deux côtés.
+      await api(app).patch(`/messages/threads/${threadId}/read`).set(...auth(providerToken));
+      await api(app).patch(`/messages/threads/${threadId}/read`).set(...auth(clientToken));
+
+      const départ = await api(app).get("/me/threads/unread-count").set(...auth(providerToken));
+      expect(départ.status).toBe(200);
+      expect(départ.body.data.unread).toBe(0);
+
+      await api(app)
+        .post(`/messages/threads/${threadId}/messages`)
+        .set(...auth(clientToken))
+        .send({ message: "Première question" });
+      await api(app)
+        .post(`/messages/threads/${threadId}/messages`)
+        .set(...auth(clientToken))
+        .send({ message: "Deuxième question" });
+
+      // Le destinataire voit les deux messages en attente.
+      const cotePrestataire = await api(app).get("/me/threads/unread-count").set(...auth(providerToken));
+      expect(cotePrestataire.body.data.unread).toBe(2);
+
+      // L'expéditeur, lui, n'a rien à lire : ses propres messages ne comptent pas.
+      const coteClient = await api(app).get("/me/threads/unread-count").set(...auth(clientToken));
+      expect(coteClient.body.data.unread).toBe(0);
+
+      // Le compteur global coïncide avec la somme des compteurs par fil.
+      const filsPrestataire = await api(app).get("/me/threads").set(...auth(providerToken));
+      const sommeParFil = filsPrestataire.body.data.reduce(
+        (total: number, fil: { unreadCount: number }) => total + fil.unreadCount,
+        0
+      );
+      expect(cotePrestataire.body.data.unread).toBe(sommeParFil);
+
+      // Après lecture, la pastille retombe à zéro.
+      await api(app).patch(`/messages/threads/${threadId}/read`).set(...auth(providerToken));
+      const apresLecture = await api(app).get("/me/threads/unread-count").set(...auth(providerToken));
+      expect(apresLecture.body.data.unread).toBe(0);
+    });
+
+    it("refuse le compteur de messages non lus sans authentification", async () => {
+      const response = await api(app).get("/me/threads/unread-count");
+      expect(response.status).toBe(401);
+    });
+
+    /**
      * Un message envoyé sans notification n'est lu que si le destinataire
      * pense à ouvrir l'application : le §12 prévoit un modèle `chat.message`.
      */

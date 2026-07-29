@@ -44,6 +44,17 @@ export class MyThreadListItemDto {
   @ApiProperty() createdAt!: Date;
 }
 
+/**
+ * Réponse de `GET /me/threads/unread-count`.
+ *
+ * Même forme que `UnreadCountDto` du module notifications — c'est délibéré :
+ * l'application consomme les deux compteurs côte à côte.
+ */
+export class ThreadsUnreadCountDto {
+  @ApiProperty({ description: "Messages non lus, tous mes fils confondus (mes propres messages exclus)" })
+  unread!: number;
+}
+
 /** Réponse de `PATCH /messages/threads/:id/read`. */
 export class MarkThreadReadResultDto {
   @ApiProperty({ description: "Nombre de messages effectivement marqués lus" })

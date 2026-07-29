@@ -8307,6 +8307,91 @@
         ]
       }
     },
+    "/api/v1/me/threads/unread-count": {
+      "get": {
+        "operationId": "MyThreadsController_unreadCount",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Nombre de messages non lus, tous fils confondus",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ThreadsUnreadCountDto"
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentification requise",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "correlationId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Count my unread messages across all my conversations",
+        "tags": [
+          "Messages"
+        ]
+      }
+    },
     "/api/v1/messages/threads/{id}/read": {
       "patch": {
         "operationId": "ThreadReadController_markRead",
@@ -14267,6 +14352,18 @@
           "lastMessage",
           "unreadCount",
           "createdAt"
+        ]
+      },
+      "ThreadsUnreadCountDto": {
+        "type": "object",
+        "properties": {
+          "unread": {
+            "type": "number",
+            "description": "Messages non lus, tous mes fils confondus (mes propres messages exclus)"
+          }
+        },
+        "required": [
+          "unread"
         ]
       },
       "MarkThreadReadResultDto": {

@@ -51,6 +51,30 @@ export class MessagesService {
   }
 
   /**
+   * Nombre total de messages non lus, tous fils confondus (§12).
+   *
+   * Pendant de `NotificationsService.unreadCount` : l'application mobile a
+   * besoin d'une pastille sur l'onglet messagerie sans charger la liste des
+   * conversations. Sommer les `unreadCount` de `GET /me/threads` ne donnait que
+   * le total de la PREMIÈRE page — une approximation fausse dès qu'un
+   * utilisateur dépasse la taille de page.
+   *
+   * Le filtre est celui de `listThreadsForUser` : un fil est « à moi » si je
+   * suis le client de la mission ou son prestataire. Et comme dans le décompte
+   * par fil, mes propres messages ne comptent jamais comme non lus.
+   */
+  async unreadCountForUser(userId: string) {
+    const count = await this.prisma.chatMessage.count({
+      where: {
+        readAt: null,
+        senderId: { not: userId },
+        thread: { mission: { OR: [{ clientId: userId }, { provider: { userId } }] } }
+      }
+    });
+    return { unread: count };
+  }
+
+  /**
    * Mes conversations (§12).
    *
    * Un fil est « à moi » si je suis le client de la mission ou son prestataire.

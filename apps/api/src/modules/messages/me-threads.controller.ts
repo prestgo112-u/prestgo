@@ -6,7 +6,7 @@ import { PaginationQueryDto } from "../../common/dto/pagination.dto.js";
 import type { AuthenticatedRequest } from "../../common/guards/permissions.guard.js";
 import { MissionAccessService } from "../missions/mission-access.service.js";
 import { MessagesService } from "./messages.service.js";
-import { MarkThreadReadResultDto, MyThreadListItemDto } from "./response-dto.js";
+import { MarkThreadReadResultDto, MyThreadListItemDto, ThreadsUnreadCountDto } from "./response-dto.js";
 
 /**
  * Mes conversations (§12).
@@ -32,6 +32,26 @@ export class MyThreadsController {
     }
     const result = await this.messages.listThreadsForUser(userId, query);
     return ok(result.data, { page: result.page, limit: result.limit, total: result.total });
+  }
+
+  /**
+   * Pastille de l'onglet messagerie : un compteur, sans charger les fils.
+   *
+   * Déclarée AVANT tout segment dynamique du même préfixe, et distincte de
+   * `notifications/unread-count` : les deux compteurs ne mesurent pas la même
+   * chose (une notification `chat.message` peut être lue sans que le message
+   * lui-même le soit).
+   */
+  @Get("threads/unread-count")
+  @ApiOperation({ summary: "Count my unread messages across all my conversations" })
+  @ApiEnvelopeResponse(ThreadsUnreadCountDto, { description: "Nombre de messages non lus, tous fils confondus" })
+  @ApiErrorResponse(401, "Authentification requise")
+  async unreadCount(@Req() req: AuthenticatedRequest) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new ForbiddenException("Authentification requise");
+    }
+    return ok(await this.messages.unreadCountForUser(userId));
   }
 }
 
