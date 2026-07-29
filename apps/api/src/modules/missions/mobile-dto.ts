@@ -14,7 +14,7 @@ import {
   Min,
   MinLength
 } from "class-validator";
-import { Type } from "class-transformer";
+import { Transform, Type } from "class-transformer";
 import { PaginationQueryDto } from "../../common/dto/pagination.dto.js";
 import { EmptyToUndefined } from "../../common/dto/transforms.js";
 
@@ -48,10 +48,30 @@ export class CreateMissionBodyDto {
 
 /** Filtres de `GET /me/missions` et `GET /providers/me/missions`. */
 export class MyMissionsQueryDto extends PaginationQueryDto {
+  /**
+   * Un statut, ou plusieurs séparés par des virgules (`?status=completed,closed`).
+   *
+   * Les onglets de l'application ne correspondent pas un pour un aux statuts :
+   * « Terminées » couvre `completed` ET `closed`, « À venir » couvre
+   * `pending_provider` ET `confirmed`. Avec un filtre scalaire, chaque onglet
+   * imposait soit deux appels, soit le chargement de toutes les missions puis
+   * un regroupement côté client — c'est-à-dire une pagination fausse.
+   *
+   * La forme scalaire reste valable : `?status=confirmed` donne toujours
+   * exactement le même résultat qu'avant.
+   */
   @IsOptional()
   @EmptyToUndefined()
-  @IsEnum(MissionStatus, { message: "Statut de mission inconnu" })
-  status?: MissionStatus;
+  @Transform(({ value }) =>
+    typeof value === "string"
+      ? value
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : value
+  )
+  @IsEnum(MissionStatus, { each: true, message: "Statut de mission inconnu" })
+  status?: MissionStatus | MissionStatus[];
 
   @IsOptional()
   @EmptyToUndefined()

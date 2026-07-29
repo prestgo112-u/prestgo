@@ -540,6 +540,73 @@ describe("boucle de valeur mission", () => {
     });
   });
 
+  /**
+   * Écart n°7 du cahier des charges mobile.
+   *
+   * Les onglets de l'application ne correspondent pas un pour un aux statuts :
+   * « Terminées » couvre `completed` ET `closed`. Avec un filtre scalaire,
+   * chaque onglet imposait deux appels — donc une pagination fausse.
+   */
+  describe("filtre multi-statuts des listes de missions (§8, §9)", () => {
+    const idsDe = (body: { data: { id: string }[] }): string[] => body.data.map((m) => m.id).sort();
+
+    it("accepte une liste de statuts séparés par des virgules", async () => {
+      const multiple = await api(app)
+        .get("/me/missions?status=pending_provider,cancelled&limit=100")
+        .set(...auth(clientToken));
+
+      expect(multiple.status).toBe(200);
+      const statuts = new Set(multiple.body.data.map((m: { status: string }) => m.status));
+      // Aucun statut hors de la liste demandée.
+      for (const statut of statuts) {
+        expect(["pending_provider", "cancelled"]).toContain(statut);
+      }
+    });
+
+    it("renvoie exactement l'union des deux appels simples", async () => {
+      const [enAttente, annulees, union] = await Promise.all([
+        api(app).get("/me/missions?status=pending_provider&limit=100").set(...auth(clientToken)),
+        api(app).get("/me/missions?status=cancelled&limit=100").set(...auth(clientToken)),
+        api(app).get("/me/missions?status=pending_provider,cancelled&limit=100").set(...auth(clientToken))
+      ]);
+
+      const attendu = [...idsDe(enAttente.body), ...idsDe(annulees.body)].sort();
+      expect(idsDe(union.body)).toEqual(attendu);
+      // `meta.total` doit suivre : c'est lui qui pilote la pagination.
+      expect(union.body.meta.total).toBe(enAttente.body.meta.total + annulees.body.meta.total);
+    });
+
+    it("garde le comportement d'origine pour une valeur unique", async () => {
+      const response = await api(app).get("/me/missions?status=cancelled&limit=100").set(...auth(clientToken));
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.length).toBeGreaterThan(0);
+      for (const mission of response.body.data) {
+        expect(mission.status).toBe("cancelled");
+      }
+    });
+
+    it("refuse la liste si UN SEUL statut est inconnu", async () => {
+      const response = await api(app)
+        .get("/me/missions?status=cancelled,statut_bidon")
+        .set(...auth(clientToken));
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain("Statut de mission inconnu");
+    });
+
+    it("s'applique aussi au planning du prestataire", async () => {
+      const response = await api(app)
+        .get("/providers/me/missions?status=pending_provider,confirmed&limit=100")
+        .set(...auth(providerToken));
+
+      expect(response.status).toBe(200);
+      for (const mission of response.body.data) {
+        expect(["pending_provider", "confirmed"]).toContain(mission.status);
+      }
+    });
+  });
+
   describe("reprogrammation à deux parties (§10)", () => {
     let missionId: string;
 

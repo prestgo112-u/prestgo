@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { Prisma } from "@prisma/client";
+import type { MissionStatus, Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma/prisma.service.js";
 import { buildOrderBy, type SortAllowList } from "../../common/dto/sorting.js";
 import { AuditService } from "../audit/audit.service.js";
@@ -295,7 +295,7 @@ export class MissionBookingService {
   /** Missions du client connecté (§8). */
   async listForClient(
     clientId: string,
-    query: { status?: string; from?: string; to?: string; page?: number; limit?: number; sort?: string }
+    query: { status?: string | string[]; from?: string; to?: string; page?: number; limit?: number; sort?: string }
   ) {
     const page = Math.max(1, Number(query.page ?? 1));
     const limit = Math.min(100, Math.max(1, Number(query.limit ?? 20)));
@@ -331,7 +331,7 @@ export class MissionBookingService {
    */
   async listForProvider(
     providerId: string,
-    query: { status?: string; from?: string; to?: string; page?: number; limit?: number; sort?: string }
+    query: { status?: string | string[]; from?: string; to?: string; page?: number; limit?: number; sort?: string }
   ) {
     const page = Math.max(1, Number(query.page ?? 1));
     const limit = Math.min(100, Math.max(1, Number(query.limit ?? 20)));
@@ -467,12 +467,19 @@ export class MissionBookingService {
 
 function buildMissionListWhere(
   base: Prisma.MissionWhereInput,
-  query: { status?: string; from?: string; to?: string }
+  query: { status?: string | string[]; from?: string; to?: string }
 ): Prisma.MissionWhereInput {
   const where: Prisma.MissionWhereInput = { ...base };
 
-  if (query.status) {
-    where.status = query.status as Prisma.MissionWhereInput["status"];
+  // `status` accepte une valeur ou une liste (`?status=completed,closed`) : un
+  // onglet qui couvre deux statuts doit tenir en un seul appel, sinon sa
+  // pagination est fausse.
+  const statuses = (Array.isArray(query.status) ? query.status : query.status ? [query.status] : []).filter(Boolean);
+
+  if (statuses.length === 1) {
+    where.status = statuses[0] as MissionStatus;
+  } else if (statuses.length > 1) {
+    where.status = { in: statuses as MissionStatus[] };
   }
 
   if (query.from || query.to) {
