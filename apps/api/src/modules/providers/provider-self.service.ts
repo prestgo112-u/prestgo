@@ -6,6 +6,14 @@ import { MAX_PORTFOLIO_ITEMS, MAX_PROVIDER_ZONES, SETTING, SETTING_DEFAULT } fro
 import { buildChecklist, checklistErrors, isChecklistComplete } from "./provider-checklist.js";
 
 /**
+ * Statuts depuis lesquels `POST /providers/me/submit` est atteignable — sous
+ * réserve, dans tous les cas, que `resubmissionBlocked` soit `false` (vérifié
+ * séparément dans `submit()`). `rejected` y figure au même titre que
+ * `changes_requested` : voir la note sur `submit()` plus bas.
+ */
+const SUBMITTABLE_STATUSES = ["profile_incomplete", "changes_requested", "rejected"];
+
+/**
  * Espace prestataire en libre-service (§5 et §6).
  *
  * Ce service corrige l'inversion de rôles du workflow §6.1 : jusqu'ici, seul un
@@ -14,8 +22,11 @@ import { buildChecklist, checklistErrors, isChecklistComplete } from "./provider
  * et soumet son dossier, l'agent décide.
  *
  * La décision reste entièrement du côté admin : les seules transitions ouvertes
- * ici sont `profile_incomplete → pending_review` et
- * `changes_requested → pending_review`.
+ * ici sont `profile_incomplete → pending_review`, `changes_requested →
+ * pending_review` et `rejected → pending_review` — cette dernière seulement
+ * si `resubmissionBlocked` est `false` (§5, écart n°8 du cahier des charges
+ * mobile : un dossier `rejected` non bloqué doit rester une deuxième chance,
+ * pas une impasse silencieuse).
  */
 @Injectable()
 export class ProviderSelfService {
@@ -188,7 +199,7 @@ export class ProviderSelfService {
     });
 
     const complete = isChecklistComplete(checklist);
-    const submittable = provider.validationStatus === "profile_incomplete" || provider.validationStatus === "changes_requested";
+    const submittable = SUBMITTABLE_STATUSES.includes(provider.validationStatus);
 
     return {
       id: provider.id,
@@ -216,6 +227,13 @@ export class ProviderSelfService {
    *   - checklist incomplète (le détail part dans `errors`) ;
    *   - statut incompatible (un dossier déjà approuvé n'a rien à re-soumettre) ;
    *   - re-soumission bloquée par un agent.
+   *
+   * `rejected` est SOUMISSIBLE au même titre que `changes_requested` — écart
+   * n°8 du cahier des charges mobile, corrigé fidèlement à la garde qui
+   * existe déjà juste au-dessus : c'est `resubmissionBlocked`, pas le statut
+   * `rejected` lui-même, qui doit fermer la porte. Le laisser fermée
+   * inconditionnellement rendait ce drapeau incohérent : un agent pouvait le
+   * poser à `false` sans que cela ouvre quoi que ce soit.
    */
   async submit(providerId: string, actorId: string) {
     const overview = await this.overview(providerId);
@@ -224,7 +242,7 @@ export class ProviderSelfService {
       throw new ForbiddenException("La re-soumission de votre dossier a été bloquée. Contactez le support.");
     }
 
-    if (overview.validationStatus !== "profile_incomplete" && overview.validationStatus !== "changes_requested") {
+    if (!SUBMITTABLE_STATUSES.includes(overview.validationStatus)) {
       throw new BadRequestException(
         `Votre dossier est au statut « ${overview.validationStatus} » : il n'y a rien à soumettre.`
       );

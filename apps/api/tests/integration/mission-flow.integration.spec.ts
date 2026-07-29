@@ -193,6 +193,112 @@ describe("boucle de valeur mission", () => {
         expect.arrayContaining(["services", "zones", "availabilities", "documents"])
       );
     });
+
+    /**
+     * Décision D (écart n°8 du cahier des charges mobile) : un dossier
+     * `rejected` redevient soumissible par défaut, exactement comme
+     * `changes_requested` — seul `resubmissionBlocked` doit fermer la porte,
+     * jamais le statut `rejected` en lui-même.
+     */
+    describe("re-soumission d'un dossier rejeté (décision D)", () => {
+      // `uniqueEmail` dérive d'un identifiant fixé une fois par EXÉCUTION de
+      // la suite (module-level) : deux appels dans le même run produiraient
+      // le même email. Ce compteur local distingue les deux prestataires que
+      // ce bloc construit.
+      let rejectedProviderSeq = 0;
+
+      async function buildCompleteProviderRejectedBy(admin: string): Promise<{ token: string; providerId: string }> {
+        rejectedProviderSeq += 1;
+        const email = uniqueEmail(`flow-rejete-${rejectedProviderSeq}`);
+        await api(app).post("/auth/register").send({ email, password: PASSWORD });
+        const otp = await api(app).post("/auth/otp/send").send({ target: email, purpose: "email_verification" });
+        await api(app)
+          .post("/auth/otp/verify")
+          .send({ target: email, code: otp.body.data.devCode, purpose: "email_verification" });
+        const token = await login(app, { email, password: PASSWORD });
+
+        const profile = await api(app)
+          .post("/providers/me")
+          .set(...auth(token))
+          .send({
+            publicName: `Rejeté ${rejectedProviderSeq}-${Date.now()}`,
+            bio: "Présentation suffisante pour la checklist."
+          });
+        const providerId = profile.body.data.id;
+
+        await api(app)
+          .put("/providers/me/zones")
+          .set(...auth(token))
+          .send({ zoneIds: [zoneId] });
+        await api(app)
+          .put("/providers/me/availabilities")
+          .set(...auth(token))
+          .send({ slots: [{ weekday: 2, startTime: "08:00", endTime: "18:00" }] });
+
+        const categories = await api(app).get("/categories");
+        const serviceTypeId = categories.body.data[0].serviceTypes[0].id;
+        const service = await api(app)
+          .post("/providers/me/services")
+          .set(...auth(token))
+          .send({ serviceTypeId, title: "Service de test" });
+        await api(app)
+          .post("/providers/me/service-packs")
+          .set(...auth(token))
+          .send({ providerServiceId: service.body.data.id, title: "Formule", price: 5000, durationMinutes: 30 });
+
+        const upload = await api(app)
+          .post("/files/upload")
+          .set(...auth(token))
+          .attach("file", Buffer.from("PIECE IDENTITE"), "id.txt");
+        await api(app)
+          .post("/providers/me/documents")
+          .set(...auth(token))
+          .send({ type: "id_card", fileId: upload.body.data.id });
+
+        await api(app).post("/providers/me/submit").set(...auth(token));
+        const rejet = await api(app)
+          .patch(`/admin/providers/${providerId}/status`)
+          .set("Authorization", `Bearer ${admin}`)
+          .send({ status: "rejected", reason: "Présentation insuffisante" });
+        expect(rejet.body.data.validationStatus).toBe("rejected");
+
+        return { token, providerId };
+      }
+
+      it("autorise la re-soumission d'un dossier rejeté non bloqué", async () => {
+        const { token } = await buildCompleteProviderRejectedBy(adminToken);
+
+        const apercu = await api(app).get("/providers/me").set(...auth(token));
+        expect(apercu.body.data.validationStatus).toBe("rejected");
+        expect(apercu.body.data.resubmissionBlocked).toBe(false);
+        // La checklist était déjà complète à la soumission précédente : elle
+        // le reste, le dossier n'a pas changé entre-temps.
+        expect(apercu.body.data.canSubmit).toBe(true);
+
+        const soumission = await api(app).post("/providers/me/submit").set(...auth(token));
+        expect(soumission.status).toBe(200);
+        expect(soumission.body.data.validationStatus).toBe("pending_review");
+        // Le motif de rejet ne porte plus sur le dossier en cours de réexamen.
+        expect(soumission.body.data.rejectionReason).toBeNull();
+      });
+
+      it("refuse la re-soumission d'un dossier rejeté ET explicitement bloqué", async () => {
+        const { token, providerId } = await buildCompleteProviderRejectedBy(adminToken);
+
+        await api(app)
+          .patch(`/admin/providers/${providerId}`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send({ resubmissionBlocked: true });
+
+        const apercu = await api(app).get("/providers/me").set(...auth(token));
+        expect(apercu.body.data.resubmissionBlocked).toBe(true);
+        expect(apercu.body.data.canSubmit).toBe(false);
+
+        const soumission = await api(app).post("/providers/me/submit").set(...auth(token));
+        expect(soumission.status).toBe(403);
+        expect(soumission.body.message).toContain("bloquée");
+      });
+    });
   });
 
   describe("recherche de prestataires (§7)", () => {
