@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Param, Post, Req } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Query, Req } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { MessagesService } from "./messages.service.js";
 import { SendMessageBodyDto } from "./dto.js";
+import { PaginationQueryDto } from "../../common/dto/pagination.dto.js";
 import { MissionAccessService } from "../missions/mission-access.service.js";
 import { NOTIFICATION, NotificationEventsService } from "../notifications/notification-events.service.js";
 import type { AuthenticatedRequest } from "../../common/guards/permissions.guard.js";
@@ -20,16 +21,40 @@ export class MessagesController {
     private readonly events: NotificationEventsService
   ) {}
 
-  // GET /messages/threads/:id/messages — lire la conversation.
+  /**
+   * GET /messages/threads/:id/messages — lire la conversation.
+   *
+   * PAGINÉE depuis la décision F (écart n°12 du cahier des charges mobile) :
+   * cette route renvoyait AUPARAVANT `data` comme un TABLEAU SIMPLE, sans
+   * `meta`, avec la conversation ENTIÈRE à chaque appel — aucune limite de
+   * taille. `data` est désormais une PAGE de messages, et `meta` porte
+   * `{ page, limit, total }`, exactement comme les autres listes de l'API
+   * (`page`/`limit`/`sort`, via `PaginationQueryDto`).
+   *
+   * ⚠️ Changement de forme de réponse : un appelant qui lisait `data` comme
+   * « tous les messages » doit désormais s'appuyer sur `meta.total` pour
+   * savoir s'il reste des pages, et sur `page`/`limit` pour les parcourir.
+   *
+   * Le tri par défaut reste `createdAt` CROISSANT (le plus ancien d'abord) :
+   * c'est le même ordre qu'avant ce changement, la page 1 correspond donc au
+   * DÉBUT de la conversation, pas à ses messages les plus récents.
+   * `?sort=-createdAt` inverse l'ordre si un écran veut charger la fin
+   * d'abord.
+   */
   @Get(":id/messages")
-  @ApiOperation({ summary: "Read the messages of a thread I belong to" })
-  @ApiEnvelopeResponse(MessageDto, { isArray: true, description: "Messages du fil, du plus ancien au plus récent" })
+  @ApiOperation({ summary: "Read the messages of a thread I belong to (paginated)" })
+  @ApiEnvelopeResponse(MessageDto, {
+    isArray: true,
+    paginated: true,
+    description: "Une page de messages du fil, triés par défaut du plus ancien au plus récent"
+  })
   @ApiErrorResponse(401, "Authentification requise")
   @ApiErrorResponse(403, "Vous n'êtes pas partie à la mission de cette conversation")
   @ApiErrorResponse(404, "Conversation ou mission introuvable")
-  async read(@Param("id") id: string, @Req() req: AuthenticatedRequest) {
+  async read(@Param("id") id: string, @Query() query: PaginationQueryDto, @Req() req: AuthenticatedRequest) {
     await this.access.requireThreadParticipant(id, req.user ?? {});
-    return ok(await this.messages.listMessages(id));
+    const result = await this.messages.listMessages(id, query);
+    return ok(result.data, { page: result.page, limit: result.limit, total: result.total });
   }
 
   // POST /messages/threads/:id/messages — écrire dans la conversation.

@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import type { Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma/prisma.service.js";
-import { parseSort, type SortAllowList } from "../../common/dto/sorting.js";
+import { buildOrderBy, parseSort, type SortAllowList } from "../../common/dto/sorting.js";
 
 @Injectable()
 export class MessagesService {
@@ -16,6 +17,18 @@ export class MessagesService {
   private static readonly MY_THREADS_SORTABLE: SortAllowList = {
     createdAt: { path: ["createdAt"], defaultDirection: "desc" },
     lastMessageAt: { path: ["createdAt"], defaultDirection: "desc" }
+  };
+
+  /**
+   * Colonnes triables des messages d'UN fil, en mode tolérant (§12).
+   *
+   * Défaut CROISSANT (le plus ancien d'abord) — c'est l'ordre qu'affichait
+   * déjà `listMessages` avant sa pagination (décision F, écart n°12) : une
+   * conversation se lit du début vers la fin, à l'inverse de la plupart des
+   * listes de l'API qui affichent le plus récent en premier.
+   */
+  private static readonly THREAD_MESSAGES_SORTABLE: SortAllowList = {
+    createdAt: { path: ["createdAt"], defaultDirection: "asc" }
   };
 
   constructor(private readonly prisma: PrismaService) {}
@@ -235,22 +248,46 @@ export class MessagesService {
     return thread;
   }
 
-  // Messages seuls (l'appelant a déjà vérifié les droits sur le fil).
-  async listMessages(threadId: string) {
-    return this.prisma.chatMessage.findMany({
-      where: { threadId },
-      orderBy: { createdAt: "asc" },
-      select: {
-        id: true,
-        senderId: true,
-        message: true,
-        createdAt: true,
-        readAt: true,
-        // Les pièces jointes accompagnent le message : sans elles, l'appelant
-        // verrait une conversation amputée de ses photos.
-        files: { select: { file: { select: { id: true, originalName: true, mimeType: true, size: true } } } }
-      }
-    });
+  /**
+   * Messages d'UN fil, PAGINÉS (l'appelant a déjà vérifié les droits dessus).
+   *
+   * Décision F (écart n°12 du cahier des charges mobile) : cette méthode
+   * renvoyait auparavant TOUS les messages en un seul tableau, sans limite —
+   * viable pour une poignée d'échanges, plus du tout pour une conversation
+   * qui s'étale sur des mois. Le mécanisme est le même que pour toute autre
+   * liste de l'API (`page`/`limit`/`sort`, mode tolérant), pas un schéma de
+   * pagination propre à la messagerie.
+   */
+  async listMessages(threadId: string, query: { page?: number; limit?: number; sort?: string } = {}) {
+    const page = Math.max(1, Number(query.page ?? 1));
+    const limit = Math.min(100, Math.max(1, Number(query.limit ?? 20)));
+
+    const [data, total] = await Promise.all([
+      this.prisma.chatMessage.findMany({
+        where: { threadId },
+        orderBy: buildOrderBy<Prisma.ChatMessageOrderByWithRelationInput>(
+          query.sort,
+          MessagesService.THREAD_MESSAGES_SORTABLE,
+          { createdAt: "asc" },
+          { lenient: true }
+        ),
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          id: true,
+          senderId: true,
+          message: true,
+          createdAt: true,
+          readAt: true,
+          // Les pièces jointes accompagnent le message : sans elles, l'appelant
+          // verrait une conversation amputée de ses photos.
+          files: { select: { file: { select: { id: true, originalName: true, mimeType: true, size: true } } } }
+        }
+      }),
+      this.prisma.chatMessage.count({ where: { threadId } })
+    ]);
+
+    return { data, total, page, limit };
   }
 
   /**

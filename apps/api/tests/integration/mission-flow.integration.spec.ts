@@ -1018,5 +1018,60 @@ describe("boucle de valeur mission", () => {
       });
       expect(pushs).toBe(1);
     });
+
+    /**
+     * Décision F (écart n°12) : GET /messages/threads/:id/messages est
+     * désormais PAGINÉE. AVANT : `data` était un tableau simple contenant
+     * TOUTE la conversation, sans `meta`. APRÈS : `data` est une PAGE, et
+     * `meta` porte `{ page, limit, total }` comme toute autre liste.
+     *
+     * Le fil utilisé ici accumule les messages des tests précédents de ce
+     * bloc : on prend donc une référence non filtrée (grande limite) plutôt
+     * que de supposer un nombre exact de messages.
+     */
+    it("pagine les messages du fil, du plus ancien au plus récent par défaut", async () => {
+      const threads = await api(app).get("/me/threads").set(...auth(clientToken));
+      const threadId = threads.body.data[0].id;
+
+      const reference = await api(app)
+        .get(`/messages/threads/${threadId}/messages?limit=100`)
+        .set(...auth(clientToken));
+
+      expect(reference.status).toBe(200);
+      expect(Array.isArray(reference.body.data)).toBe(true);
+      expect(reference.body.meta).toMatchObject({ page: 1, limit: 100, total: reference.body.data.length });
+      // Ce bloc a envoyé au moins 6 messages avant ce test (accusé de
+      // réception, pièce jointe, 3 messages du regroupement de push...).
+      expect(reference.body.data.length).toBeGreaterThanOrEqual(4);
+
+      // Ordre par défaut inchangé par rapport à l'ancienne forme : croissant.
+      const dates = reference.body.data.map((m: { createdAt: string }) => new Date(m.createdAt).getTime());
+      expect(dates).toEqual([...dates].sort((a: number, b: number) => a - b));
+
+      // Une page de taille 2 renvoie EXACTEMENT deux éléments : les deux
+      // premiers de la référence, pas la conversation entière.
+      const page1 = await api(app)
+        .get(`/messages/threads/${threadId}/messages?limit=2&page=1`)
+        .set(...auth(clientToken));
+      expect(page1.body.data).toHaveLength(2);
+      expect(page1.body.meta).toMatchObject({ page: 1, limit: 2, total: reference.body.data.length });
+      expect(page1.body.data.map((m: { id: string }) => m.id)).toEqual(
+        reference.body.data.slice(0, 2).map((m: { id: string }) => m.id)
+      );
+
+      // Deuxième page : la suite exacte de la référence, pas un doublon de la première.
+      const page2 = await api(app)
+        .get(`/messages/threads/${threadId}/messages?limit=2&page=2`)
+        .set(...auth(clientToken));
+      expect(page2.body.data.map((m: { id: string }) => m.id)).toEqual(
+        reference.body.data.slice(2, 4).map((m: { id: string }) => m.id)
+      );
+
+      // `sort=-createdAt` inverse l'ordre : le tout dernier message en tête.
+      const inverse = await api(app)
+        .get(`/messages/threads/${threadId}/messages?limit=100&sort=-createdAt`)
+        .set(...auth(clientToken));
+      expect(inverse.body.data[0].id).toBe(reference.body.data[reference.body.data.length - 1].id);
+    });
   });
 });

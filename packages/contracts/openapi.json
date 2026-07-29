@@ -8401,7 +8401,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Messages du fil, du plus ancien au plus récent",
+            "description": "Une page de messages du fil, triés par défaut du plus ancien au plus récent",
             "content": {
               "application/json": {
                 "schema": {
@@ -8421,7 +8421,17 @@
                     },
                     "meta": {
                       "type": "object",
-                      "properties": {}
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        }
+                      }
                     }
                   }
                 }
@@ -8563,7 +8573,7 @@
             "bearer": []
           }
         ],
-        "summary": "Read the messages of a thread I belong to",
+        "summary": "Read the messages of a thread I belong to (paginated)",
         "tags": [
           "Messages"
         ]
