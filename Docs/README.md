@@ -320,6 +320,8 @@ effectuées.
 | [Lot 4 — Modèle de données](Lot4-Modele-de-donnees.md) | 7 tables, clés étrangères, commentaire interne, recherche géographique |
 | [Lot 5 — Fiabilité](Lot5-Fiabilite.md) | 91 tests réels, notifications acheminées, entretien automatique |
 | [Lots 6 et 7 — Surface mobile et production](Lot6-7-Surface-mobile-et-production.md) | réservation, recherche, espace prestataire, avis, migrations versionnées, Redis, push et SMS |
+| [Checklist infrastructure](INFRA-CHECKLIST.md) | mise en service Redis/BullMQ, SMS, push |
+| [Données de démonstration](SEED-DATA.md) | comptes de test (dont un prestataire déjà approuvé, prêt pour réserver) |
 
 Le cahier des charges d'origine :
 [Cahier des charges v1.2](Cahier_des_charges_PRESTGO_Backoffice_Backend_API_v1.2.md)

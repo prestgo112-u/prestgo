@@ -448,6 +448,98 @@ async function main(): Promise<void> {
     }
   }
 
+  // === Prestataire de test « prêt à réserver » ===
+  //
+  // Kofi et Ama restent volontairement en `pending_review` (ils servent à
+  // tester le parcours de validation). Sans un troisième profil déjà
+  // `approved`, quiconque veut tester une RÉSERVATION à la main devrait
+  // d'abord se connecter en agent de validation et approuver un dossier à
+  // chaque réinitialisation de la base. Ce prestataire évite ce détour :
+  // approuvé, disponible, avec une formule à ~5000 XOF et un agenda large
+  // (tous les jours 8h-18h) pour ne jamais bloquer sur un créneau.
+  const readyProviderUser = await prisma.user.upsert({
+    where: { email: "provider.ready@prestgo.test" },
+    update: { status: "active" },
+    create: {
+      email: "provider.ready@prestgo.test",
+      firstName: "Provider",
+      lastName: "Ready",
+      passwordHash: providerHash,
+      status: "active"
+    }
+  });
+
+  const readyProvider = await prisma.providerProfile.upsert({
+    where: { userId: readyProviderUser.id },
+    update: {
+      validationStatus: "approved",
+      availabilityStatus: "available",
+      score: 4.5,
+      reviewsCount: 12
+    },
+    create: {
+      userId: readyProviderUser.id,
+      publicName: "PRESTGO Demo — Plomberie Express",
+      bio: "Compte de démonstration déjà approuvé, pour tester le parcours de réservation sans passer par la validation manuelle.",
+      experienceYears: 6,
+      validationStatus: "approved",
+      availabilityStatus: "available",
+      score: 4.5,
+      reviewsCount: 12
+    }
+  });
+
+  // Prestation + formule à ~5000 XOF, sur un type de service déjà catalogué.
+  let readyProviderService = await prisma.providerService.findFirst({
+    where: { providerId: readyProvider.id, serviceTypeId: serviceType.id }
+  });
+  if (!readyProviderService) {
+    readyProviderService = await prisma.providerService.create({
+      data: {
+        providerId: readyProvider.id,
+        serviceTypeId: serviceType.id,
+        title: "Dépannage plomberie express",
+        description: "Intervention rapide pour petites réparations."
+      }
+    });
+  }
+
+  const readyPackExists = await prisma.servicePack.findFirst({
+    where: { providerServiceId: readyProviderService.id }
+  });
+  if (!readyPackExists) {
+    await prisma.servicePack.create({
+      data: {
+        providerServiceId: readyProviderService.id,
+        title: "Intervention express",
+        description: "Petite réparation, sur place en moins d'une heure.",
+        price: 5000,
+        durationMinutes: 45
+      }
+    });
+  }
+
+  // Zone active : on réutilise Cocody plutôt que d'en inventer une nouvelle.
+  const cocodyZone = await prisma.zone.findFirst({ where: { name: "Cocody", active: true } });
+  if (cocodyZone) {
+    await prisma.providerZone.upsert({
+      where: { providerId_zoneId: { providerId: readyProvider.id, zoneId: cocodyZone.id } },
+      update: {},
+      create: { providerId: readyProvider.id, zoneId: cocodyZone.id }
+    });
+  }
+
+  // Agenda large : tous les jours, 8h-18h — aucun test manuel ne devrait
+  // buter sur « pas de créneau disponible ».
+  const readyAvailCount = await prisma.providerAvailability.count({ where: { providerId: readyProvider.id } });
+  if (readyAvailCount === 0) {
+    for (let weekday = 0; weekday <= 6; weekday += 1) {
+      await prisma.providerAvailability.create({
+        data: { providerId: readyProvider.id, weekday, startTime: "08:00", endTime: "18:00" }
+      });
+    }
+  }
+
   // === Données de démonstration US5 : réglages + modèle de notification ===
   const settingSeeds = [
     { key: "platform.name", value: "PRESTGO", type: "string", description: "Nom affiché de la plateforme" },
