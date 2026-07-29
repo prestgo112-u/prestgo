@@ -23,6 +23,24 @@ export interface ParsedSort {
   direction: SortDirection;
 }
 
+export interface SortParseOptions {
+  /**
+   * Un champ inconnu ou un sens de tri invalide redevient « pas de tri
+   * demandé » (`null`) au lieu de lever une exception.
+   *
+   * Réservé aux listes de la surface mobile (§12) : une application qui
+   * envoie un `sort` malformé à cause d'un bug ne doit pas se retrouver avec
+   * une erreur bloquante en plein usage — elle doit simplement recevoir la
+   * liste dans son ordre habituel. Les listes du back-office, elles,
+   * continuent de lever une erreur explicite : un agent qui compose l'URL à
+   * la main veut savoir immédiatement que le champ demandé n'existe pas.
+   *
+   * Comportement par défaut inchangé (`false`) : ne pas casser les appelants
+   * existants qui comptent sur le rejet explicite.
+   */
+  lenient?: boolean;
+}
+
 /**
  * Analyse le paramètre `sort` d'une requête.
  *
@@ -39,7 +57,11 @@ export interface ParsedSort {
  * paramètre sans jamais changer l'ordre des résultats, ce qui trompait
  * silencieusement l'appelant.
  */
-export function parseSort(sort: string | undefined, allowed: SortAllowList): ParsedSort | null {
+export function parseSort(
+  sort: string | undefined,
+  allowed: SortAllowList,
+  options?: SortParseOptions
+): ParsedSort | null {
   const raw = sort?.trim();
   if (!raw) {
     return null;
@@ -60,6 +82,9 @@ export function parseSort(sort: string | undefined, allowed: SortAllowList): Par
   if (separator !== -1) {
     const suffix = field.slice(separator + 1).toLowerCase();
     if (suffix !== "asc" && suffix !== "desc") {
+      if (options?.lenient) {
+        return null;
+      }
       throw new BadRequestException(`Sens de tri inconnu : « ${suffix} » (attendu « asc » ou « desc »)`);
     }
     direction = suffix;
@@ -69,6 +94,9 @@ export function parseSort(sort: string | undefined, allowed: SortAllowList): Par
   field = field.trim();
   const definition = allowed[field];
   if (!definition) {
+    if (options?.lenient) {
+      return null;
+    }
     const names = Object.keys(allowed).sort().join(", ");
     throw new BadRequestException(`Tri impossible sur « ${field} ». Champs triables : ${names}`);
   }
@@ -80,12 +108,18 @@ export function parseSort(sort: string | undefined, allowed: SortAllowList): Par
 /**
  * Traduit `sort` en clause `orderBy` Prisma.
  *
- * `fallback` est l'ordre appliqué quand l'appelant ne demande rien : chaque
+ * `fallback` est l'ordre appliqué quand l'appelant ne demande rien — ou,
+ * en mode `lenient`, quand ce qu'il a demandé n'est pas exploitable. Chaque
  * liste garde ainsi son tri naturel (le plus souvent « les plus récents
  * d'abord »).
  */
-export function buildOrderBy<T>(sort: string | undefined, allowed: SortAllowList, fallback: T): T {
-  const parsed = parseSort(sort, allowed);
+export function buildOrderBy<T>(
+  sort: string | undefined,
+  allowed: SortAllowList,
+  fallback: T,
+  options?: SortParseOptions
+): T {
+  const parsed = parseSort(sort, allowed, options);
   if (!parsed) {
     return fallback;
   }

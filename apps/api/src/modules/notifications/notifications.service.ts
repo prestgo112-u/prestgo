@@ -1,10 +1,17 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import type { Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma/prisma.service.js";
+import { buildOrderBy, type SortAllowList } from "../../common/dto/sorting.js";
 import { AuditService } from "../audit/audit.service.js";
 import { NotificationDispatcher } from "./notification-dispatcher.service.js";
 
 @Injectable()
 export class NotificationsService {
+  /** Colonnes triables de « mes notifications » (§15.4), en mode tolérant (§12). */
+  private static readonly MY_NOTIFICATIONS_SORTABLE: SortAllowList = {
+    createdAt: { path: ["createdAt"], defaultDirection: "desc" }
+  };
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
@@ -29,7 +36,7 @@ export class NotificationsService {
    * sont des traces d'acheminement, pas des messages à afficher. Les inclure
    * ferait apparaître chaque notification en double ou en triple dans la liste.
    */
-  async listForUser(userId: string, query: { page?: number; limit?: number; unread?: boolean }) {
+  async listForUser(userId: string, query: { page?: number; limit?: number; unread?: boolean; sort?: string }) {
     const page = Math.max(1, Number(query.page ?? 1));
     const limit = Math.min(100, Math.max(1, Number(query.limit ?? 20)));
     const where = {
@@ -41,7 +48,15 @@ export class NotificationsService {
     const [data, total] = await Promise.all([
       this.prisma.notification.findMany({
         where,
-        orderBy: { createdAt: "desc" },
+        // Défaut inchangé (les plus récentes d'abord) ; `sort` accepte
+        // désormais `createdAt` (ex. `sort=createdAt` pour les plus anciennes
+        // d'abord). Auparavant ce paramètre n'était même pas lu.
+        orderBy: buildOrderBy<Prisma.NotificationOrderByWithRelationInput>(
+          query.sort,
+          NotificationsService.MY_NOTIFICATIONS_SORTABLE,
+          { createdAt: "desc" },
+          { lenient: true }
+        ),
         skip: (page - 1) * limit,
         take: limit,
         select: {

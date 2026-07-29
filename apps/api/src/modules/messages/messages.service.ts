@@ -1,8 +1,23 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma/prisma.service.js";
+import { parseSort, type SortAllowList } from "../../common/dto/sorting.js";
 
 @Injectable()
 export class MessagesService {
+  /**
+   * Colonnes triables de « mes conversations » (§15.4), en mode tolérant (§12).
+   *
+   * `lastMessageAt` n'est PAS une colonne persistée : `ChatThread` n'a pas de
+   * champ `updatedAt`, seulement `createdAt` (date de création du fil, pas de
+   * dernière activité). Le tri par dernier message se fait donc en mémoire,
+   * après la lecture — même principe que le tri par distance de
+   * `provider-search.service.ts`, qui n'est pas non plus une colonne SQL.
+   */
+  private static readonly MY_THREADS_SORTABLE: SortAllowList = {
+    createdAt: { path: ["createdAt"], defaultDirection: "desc" },
+    lastMessageAt: { path: ["createdAt"], defaultDirection: "desc" }
+  };
+
   constructor(private readonly prisma: PrismaService) {}
 
   // Liste les fils de discussion (un par mission) avec le nombre de messages.
@@ -42,7 +57,7 @@ export class MessagesService {
    * Le nombre de non-lus ne compte QUE les messages des autres : mes propres
    * messages n'ont pas à être marqués lus.
    */
-  async listThreadsForUser(userId: string, query: { page?: number; limit?: number }) {
+  async listThreadsForUser(userId: string, query: { page?: number; limit?: number; sort?: string }) {
     const page = Math.max(1, Number(query.page ?? 1));
     const limit = Math.min(100, Math.max(1, Number(query.limit ?? 20)));
 
@@ -52,38 +67,49 @@ export class MessagesService {
       }
     };
 
-    const [rows, total] = await Promise.all([
-      this.prisma.chatThread.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        skip: (page - 1) * limit,
-        take: limit,
+    // Tri : un champ inconnu ou mal formé retombe sur le défaut (`null`),
+    // sans bloquer l'appelant (§12, mode tolérant).
+    const parsed = parseSort(query.sort, MessagesService.MY_THREADS_SORTABLE, { lenient: true });
+    const sortByLastMessage = parsed?.field === "lastMessageAt";
+    const direction = parsed?.direction ?? "desc";
+
+    const selectShape = {
+      id: true,
+      status: true,
+      createdAt: true,
+      mission: {
         select: {
           id: true,
           status: true,
-          createdAt: true,
-          mission: {
-            select: {
-              id: true,
-              status: true,
-              scheduledAt: true,
-              clientId: true,
-              client: { select: { firstName: true, lastName: true } },
-              provider: { select: { userId: true, publicName: true, avatarFileId: true } }
-            }
-          },
-          messages: {
-            orderBy: { createdAt: "desc" },
-            take: 1,
-            select: { id: true, message: true, senderId: true, createdAt: true }
-          },
-          _count: { select: { messages: { where: { readAt: null, senderId: { not: userId } } } } }
+          scheduledAt: true,
+          clientId: true,
+          client: { select: { firstName: true, lastName: true } },
+          provider: { select: { userId: true, publicName: true, avatarFileId: true } }
         }
-      }),
-      this.prisma.chatThread.count({ where })
-    ]);
+      },
+      messages: {
+        orderBy: { createdAt: "desc" as const },
+        take: 1,
+        select: { id: true, message: true, senderId: true, createdAt: true }
+      },
+      _count: { select: { messages: { where: { readAt: null, senderId: { not: userId } } } } }
+    };
 
-    const data = rows.map((thread) => {
+    const toDto = (thread: {
+      id: string;
+      status: string;
+      createdAt: Date;
+      mission: {
+        id: string;
+        status: string;
+        scheduledAt: Date | null;
+        clientId: string;
+        client: { firstName: string | null; lastName: string | null };
+        provider: { userId: string; publicName: string; avatarFileId: string | null } | null;
+      };
+      messages: { id: string; message: string; senderId: string | null; createdAt: Date }[];
+      _count: { messages: number };
+    }) => {
       const iAmTheClient = thread.mission.clientId === userId;
       return {
         id: thread.id,
@@ -100,9 +126,44 @@ export class MessagesService {
         unreadCount: thread._count.messages,
         createdAt: thread.createdAt
       };
-    });
+    };
 
-    return { data, total, page, limit };
+    // Tri par date de création du fil : une colonne réelle, la pagination se
+    // fait normalement au niveau SQL — c'est le chemin par défaut, inchangé.
+    if (!sortByLastMessage) {
+      const [rows, total] = await Promise.all([
+        this.prisma.chatThread.findMany({
+          where,
+          orderBy: { createdAt: direction },
+          skip: (page - 1) * limit,
+          take: limit,
+          select: selectShape
+        }),
+        this.prisma.chatThread.count({ where })
+      ]);
+      return { data: rows.map(toDto), total, page, limit };
+    }
+
+    // Tri par date du DERNIER MESSAGE : ce n'est pas une colonne persistée
+    // (`ChatThread` n'a pas d'`updatedAt`). On lit donc l'ensemble des fils de
+    // l'utilisateur — un nombre borné, ce sont ses propres conversations —
+    // puis on trie en mémoire sur le message le plus récent avant de découper
+    // la page. Même principe que le tri par distance de
+    // `provider-search.service.ts`, qui n'est pas non plus une colonne SQL.
+    const [rows, total] = await Promise.all([
+      this.prisma.chatThread.findMany({ where, select: selectShape }),
+      this.prisma.chatThread.count({ where })
+    ]);
+
+    const sorted = rows
+      .map(toDto)
+      .sort((a, b) => {
+        const aTime = (a.lastMessage?.createdAt ?? a.createdAt).getTime();
+        const bTime = (b.lastMessage?.createdAt ?? b.createdAt).getTime();
+        return direction === "asc" ? aTime - bTime : bTime - aTime;
+      });
+
+    return { data: sorted.slice((page - 1) * limit, page * limit), total, page, limit };
   }
 
   /**

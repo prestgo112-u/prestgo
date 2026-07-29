@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import type { Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma/prisma.service.js";
+import { buildOrderBy, type SortAllowList } from "../../common/dto/sorting.js";
 import { AuditService } from "../audit/audit.service.js";
 import { NOTIFICATION, NotificationEventsService } from "../notifications/notification-events.service.js";
 import { SETTING, SETTING_DEFAULT } from "../settings/settings.keys.js";
@@ -277,8 +278,25 @@ export class MissionBookingService {
     };
   }
 
+  /**
+   * Colonnes triables des listes de missions « me » (§15.4).
+   *
+   * En mode `lenient` (voir les appels ci-dessous) : un `sort` inconnu ou mal
+   * formé ne bloque pas l'appelant, il retombe sur le tri par défaut de la
+   * liste — contrairement aux listes du back-office, qui refusent
+   * explicitement.
+   */
+  private static readonly MY_MISSIONS_SORTABLE: SortAllowList = {
+    scheduledAt: { path: ["scheduledAt"] },
+    createdAt: { path: ["createdAt"], defaultDirection: "desc" },
+    status: ["status"]
+  };
+
   /** Missions du client connecté (§8). */
-  async listForClient(clientId: string, query: { status?: string; from?: string; to?: string; page?: number; limit?: number }) {
+  async listForClient(
+    clientId: string,
+    query: { status?: string; from?: string; to?: string; page?: number; limit?: number; sort?: string }
+  ) {
     const page = Math.max(1, Number(query.page ?? 1));
     const limit = Math.min(100, Math.max(1, Number(query.limit ?? 20)));
     const where = buildMissionListWhere({ clientId }, query);
@@ -286,7 +304,14 @@ export class MissionBookingService {
     const [rows, total] = await Promise.all([
       this.prisma.mission.findMany({
         where,
-        orderBy: { scheduledAt: "desc" },
+        // Tri par défaut inchangé : `scheduledAt desc` — le client consulte
+        // d'abord son historique récent.
+        orderBy: buildOrderBy<Prisma.MissionOrderByWithRelationInput>(
+          query.sort,
+          MissionBookingService.MY_MISSIONS_SORTABLE,
+          { scheduledAt: "desc" },
+          { lenient: true }
+        ),
         skip: (page - 1) * limit,
         take: limit,
         select: this.listSelect()
@@ -300,10 +325,14 @@ export class MissionBookingService {
   /**
    * Missions du prestataire connecté (§9).
    *
-   * Triées par date d'intervention CROISSANTE : le prestataire veut voir ce qui
-   * arrive, pas ce qui est passé. C'est l'inverse du besoin du client.
+   * Triées par défaut par date d'intervention CROISSANTE : le prestataire veut
+   * voir ce qui arrive, pas ce qui est passé. C'est l'inverse du besoin du
+   * client — ce défaut n'est pas modifié par cette tâche.
    */
-  async listForProvider(providerId: string, query: { status?: string; from?: string; to?: string; page?: number; limit?: number }) {
+  async listForProvider(
+    providerId: string,
+    query: { status?: string; from?: string; to?: string; page?: number; limit?: number; sort?: string }
+  ) {
     const page = Math.max(1, Number(query.page ?? 1));
     const limit = Math.min(100, Math.max(1, Number(query.limit ?? 20)));
     const where = buildMissionListWhere({ providerId }, query);
@@ -311,7 +340,12 @@ export class MissionBookingService {
     const [rows, total] = await Promise.all([
       this.prisma.mission.findMany({
         where,
-        orderBy: { scheduledAt: "asc" },
+        orderBy: buildOrderBy<Prisma.MissionOrderByWithRelationInput>(
+          query.sort,
+          MissionBookingService.MY_MISSIONS_SORTABLE,
+          { scheduledAt: "asc" },
+          { lenient: true }
+        ),
         skip: (page - 1) * limit,
         take: limit,
         select: this.listSelect()

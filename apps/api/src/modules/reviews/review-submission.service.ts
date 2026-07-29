@@ -1,5 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import type { Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma/prisma.service.js";
+import { buildOrderBy, type SortAllowList } from "../../common/dto/sorting.js";
 import { AuditService } from "../audit/audit.service.js";
 import { NOTIFICATION, NotificationEventsService } from "../notifications/notification-events.service.js";
 import { SETTING, SETTING_DEFAULT } from "../settings/settings.keys.js";
@@ -129,8 +131,14 @@ export class ReviewSubmissionService {
     return review;
   }
 
+  /** Colonnes triables de « mes avis » (§15.4), en mode tolérant (§12). */
+  private static readonly MY_REVIEWS_SORTABLE: SortAllowList = {
+    createdAt: { path: ["createdAt"], defaultDirection: "desc" },
+    rating: { path: ["rating"], defaultDirection: "desc" }
+  };
+
   /** Les avis que J'AI déposés (§11). */
-  async listMine(authorId: string, query: { page?: number; limit?: number }) {
+  async listMine(authorId: string, query: { page?: number; limit?: number; sort?: string }) {
     const page = Math.max(1, Number(query.page ?? 1));
     const limit = Math.min(100, Math.max(1, Number(query.limit ?? 20)));
     const where = { authorId };
@@ -138,7 +146,13 @@ export class ReviewSubmissionService {
     const [data, total] = await Promise.all([
       this.prisma.review.findMany({
         where,
-        orderBy: { createdAt: "desc" },
+        // Défaut inchangé : les plus récents d'abord.
+        orderBy: buildOrderBy<Prisma.ReviewOrderByWithRelationInput>(
+          query.sort,
+          ReviewSubmissionService.MY_REVIEWS_SORTABLE,
+          { createdAt: "desc" },
+          { lenient: true }
+        ),
         skip: (page - 1) * limit,
         take: limit,
         select: {
