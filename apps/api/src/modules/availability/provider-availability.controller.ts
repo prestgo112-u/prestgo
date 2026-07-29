@@ -103,6 +103,10 @@ export class ProviderAvailabilityController {
   @Public()
   @Get(":id/availabilities")
   @ApiOperation({ summary: "Get the weekly availability of a provider" })
+  @ApiEnvelopeResponse(ProviderAvailabilitySlotDto, {
+    isArray: true,
+    description: "Agenda hebdomadaire, trié par jour puis par heure de début"
+  })
   async listForProvider(@Param("id") id: string) {
     return ok(await this.availability.listForProvider(id));
   }
@@ -111,6 +115,10 @@ export class ProviderAvailabilityController {
   @Public()
   @Get(":id/unavailabilities")
   @ApiOperation({ summary: "Get the exceptional unavailabilities of a provider" })
+  @ApiEnvelopeResponse(ProviderUnavailabilityDto, {
+    isArray: true,
+    description: "Absences exceptionnelles, de la plus proche à la plus lointaine"
+  })
   async listUnavailabilities(@Param("id") id: string) {
     return ok(await this.availability.listUnavailabilities(id));
   }

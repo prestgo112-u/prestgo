@@ -14,7 +14,7 @@ import {
   UseInterceptors
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiResponse } from "@nestjs/swagger";
 import type { Response } from "express";
 import { randomUUID } from "node:crypto";
 import { extname } from "node:path";
@@ -23,6 +23,8 @@ import type { AuthenticatedRequest } from "../../common/guards/permissions.guard
 import { Public } from "../../common/decorators/public.decorator.js";
 import { AuthService } from "../auth/auth.service.js";
 import { ok } from "../../common/contracts/api-response.js";
+import { ApiEnvelopeResponse, ApiErrorResponse } from "../../common/openapi/api-envelope.decorator.js";
+import { FileDto } from "./response-dto.js";
 import { canAccessFile, type FileVisibility } from "./file-access.policy.js";
 import { FileStorageService } from "./file-storage.service.js";
 
@@ -61,6 +63,10 @@ export class FilesController {
   @Post("upload")
   @ApiOperation({ summary: "Upload a file" })
   @ApiConsumes("multipart/form-data")
+  @ApiEnvelopeResponse(FileDto, { status: 201, description: "Fichier enregistré" })
+  @ApiErrorResponse(400, "Aucun fichier reçu (champ attendu : « file »), ou type de fichier non autorisé")
+  @ApiErrorResponse(401, "Authentification requise")
+  @ApiErrorResponse(413, "Fichier dépassant 10 Mo")
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_UPLOAD_BYTES } }))
   async upload(
     @UploadedFile() upload: Express.Multer.File | undefined,
@@ -106,6 +112,10 @@ export class FilesController {
   // GET /files/:id — renvoie les métadonnées si l'utilisateur a le droit d'accès.
   @Get(":id")
   @ApiOperation({ summary: "Get file metadata if authorized" })
+  @ApiEnvelopeResponse(FileDto, { description: "Métadonnées du fichier" })
+  @ApiErrorResponse(401, "Authentification requise")
+  @ApiErrorResponse(403, "Accès au fichier refusé")
+  @ApiErrorResponse(404, "Fichier introuvable ou désactivé")
   async getFile(@Param("id") id: string, @Req() req: AuthenticatedRequest) {
     const file = await this.loadAuthorized(id, req);
     return ok(file);
@@ -131,6 +141,11 @@ export class FilesController {
   @Public()
   @Get(":id/content")
   @ApiOperation({ summary: "Download the file content (public files need no token)" })
+  // Réponse hors enveloppe : c'est le binaire du fichier, avec son propre
+  // Content-Type et `Content-Disposition: inline`.
+  @ApiResponse({ status: 200, description: "Contenu binaire du fichier" })
+  @ApiErrorResponse(403, "Accès au fichier refusé (fichier non public et demandeur non autorisé)")
+  @ApiErrorResponse(404, "Fichier introuvable, désactivé, ou contenu absent du stockage")
   async download(@Param("id") id: string, @Req() req: AuthenticatedRequest, @Res() res: Response) {
     const file = await this.loadAuthorized(id, req, await this.resolveOptionalActor(req));
 
@@ -152,6 +167,10 @@ export class FilesController {
   // demande de conserver l'historique). Seul le propriétaire peut le faire.
   @Delete(":id")
   @ApiOperation({ summary: "Disable a file" })
+  @ApiEnvelopeResponse(FileDto, { description: "Fichier désactivé (disabledAt renseignée) ; la ligne est conservée" })
+  @ApiErrorResponse(401, "Authentification requise")
+  @ApiErrorResponse(403, "Seul le propriétaire peut désactiver ce fichier")
+  @ApiErrorResponse(404, "Fichier introuvable ou déjà désactivé")
   async disable(@Param("id") id: string, @Req() req: AuthenticatedRequest) {
     const file = await this.loadAuthorized(id, req);
     if (file.ownerId && file.ownerId !== req.user?.id) {

@@ -37,6 +37,9 @@ describe("boucle de valeur mission", () => {
   let providerToken: string;
 
   let providerId: string;
+  // Nom public unique, pour retrouver CE prestataire en recherche sans dépendre
+  // du nombre de prestataires déjà présents dans la base de test.
+  const providerPublicName = `Plomberie ${Date.now()}`;
   let packId: string;
   let optionId: string;
   let addressId: string;
@@ -79,7 +82,7 @@ describe("boucle de valeur mission", () => {
     const profile = await api(app)
       .post("/providers/me")
       .set(...auth(providerToken))
-      .send({ publicName: `Plomberie ${Date.now()}`, bio: "Interventions rapides à Cocody.", experienceYears: 6 });
+      .send({ publicName: providerPublicName, bio: "Interventions rapides à Cocody.", experienceYears: 6 });
     providerId = profile.body.data.id;
 
     // Zone existante du jeu de démonstration (Cocody, rayon 5 km).
@@ -195,8 +198,18 @@ describe("boucle de valeur mission", () => {
   describe("recherche de prestataires (§7)", () => {
     it("trouve le prestataire par position et créneau", async () => {
       const date = scheduledAt.toISOString().slice(0, 10);
+      // Le filtre `q` cible le nom public unique de CE prestataire.
+      //
+      // Sans lui, le test dépendait du rang du prestataire dans les 20 premiers
+      // résultats. Or la base de test n'est jamais vidée entre deux exécutions
+      // (voir `global-setup.ts`) : chaque passage y ajoute un prestataire
+      // approuvé couvrant Cocody. Au-delà de vingt, le prestataire du test
+      // sortait de la première page — et comme ils partagent tous la même zone,
+      // donc la même distance, l'ordre entre eux est instable. Le test
+      // échouait alors par intermittence, sans rapport avec ce qu'il vérifie.
       const response = await api(app).get(
-        `/providers/search?latitude=5.35&longitude=-3.98&radiusKm=10&date=${date}&startTime=09:00`
+        `/providers/search?latitude=5.35&longitude=-3.98&radiusKm=10&date=${date}&startTime=09:00` +
+          `&q=${encodeURIComponent(providerPublicName)}`
       );
 
       expect(response.status).toBe(200);

@@ -264,5 +264,58 @@ describe("contrôle d'accès", () => {
       expect(messagesClient).toContain("Message visible des parties.");
       expect(messagesClient).not.toContain("NOTE INTERNE confidentielle.");
     });
+
+    /**
+     * Écart n°16 du cahier des charges mobile : `/disputes/*` n'avait aucun DTO
+     * de réponse Swagger. Sa forme n'étant pas contractualisée, le document
+     * mobile renvoyait l'équipe Flutter à la lecture du service. Ces
+     * assertions verrouillent la forme que les DTO déclarent désormais.
+     */
+    it("expose une forme stable, conforme aux DTO déclarés", async () => {
+      const ouverture = await api(app)
+        .post("/disputes")
+        .set("Authorization", `Bearer ${clientToken}`)
+        .send({ missionId, reason: "Contrôle de forme", description: "Description facultative." });
+
+      expect(ouverture.status).toBe(201);
+      // POST renvoie la ligne brute, sans relation : ni messages, ni fichiers.
+      expect(Object.keys(ouverture.body.data).sort()).toEqual([
+        "assignedTo",
+        "createdAt",
+        "decision",
+        "description",
+        "id",
+        "missionId",
+        "openedBy",
+        "reason",
+        "status",
+        "updatedAt"
+      ]);
+      expect(ouverture.body.data.status).toBe("open");
+      expect(ouverture.body.data.missionId).toBe(missionId);
+
+      const detail = await api(app)
+        .get(`/disputes/${ouverture.body.data.id}`)
+        .set("Authorization", `Bearer ${clientToken}`);
+
+      expect(detail.status).toBe(200);
+      // GET ajoute exactement deux relations aux champs ci-dessus.
+      expect(Object.keys(detail.body.data).sort()).toEqual([
+        "assignedTo",
+        "createdAt",
+        "decision",
+        "description",
+        "files",
+        "id",
+        "messages",
+        "missionId",
+        "openedBy",
+        "reason",
+        "status",
+        "updatedAt"
+      ]);
+      expect(Array.isArray(detail.body.data.messages)).toBe(true);
+      expect(Array.isArray(detail.body.data.files)).toBe(true);
+    });
   });
 });

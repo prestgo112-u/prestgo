@@ -246,7 +246,158 @@
         "parameters": [],
         "responses": {
           "201": {
-            "description": ""
+            "description": "Fichier enregistré",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/FileDto"
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Aucun fichier reçu (champ attendu : « file »), ou type de fichier non autorisé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "correlationId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentification requise",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "correlationId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Fichier dépassant 10 Mo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "correlationId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -275,7 +426,158 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Métadonnées du fichier",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/FileDto"
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentification requise",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "correlationId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Accès au fichier refusé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "correlationId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Fichier introuvable ou désactivé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "correlationId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -302,7 +604,158 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Fichier désactivé (disabledAt renseignée) ; la ligne est conservée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/FileDto"
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentification requise",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "correlationId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Seul le propriétaire peut désactiver ce fichier",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "correlationId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Fichier introuvable ou déjà désactivé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "correlationId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -331,7 +784,93 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Contenu binaire du fichier"
+          },
+          "403": {
+            "description": "Accès au fichier refusé (fichier non public et demandeur non autorisé)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "correlationId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Fichier introuvable, désactivé, ou contenu absent du stockage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "correlationId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -9058,7 +9597,201 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Litige ouvert, au statut open",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/DisputeDto"
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Motif manquant (au moins 3 caractères), ou identifiant de mission invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "correlationId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentification requise",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "correlationId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Vous n'êtes pas partie à cette mission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "correlationId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Mission introuvable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "correlationId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -9087,7 +9820,158 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Litige, son fil de messages et ses pièces jointes (hors commentaires internes)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/DisputeDetailDto"
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentification requise",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "correlationId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Vous n'êtes pas partie à la mission de ce litige",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "correlationId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Litige introuvable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "correlationId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -9539,7 +10423,32 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Catégories actives, triées par displayOrder puis par nom, avec leurs types de service actifs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PublicCategoryDto"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {}
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "summary": "List active categories with their service types",
@@ -9554,7 +10463,32 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Zones actives, triées par nom",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PublicZoneDto"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {}
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "summary": "List active zones",
@@ -9569,7 +10503,75 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Zones actives dont le centre est dans le rayon, de la plus proche à la plus lointaine",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/NearbyZoneDto"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Latitude, longitude ou rayon invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "correlationId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "summary": "Find active zones within a radius of a point",
@@ -10310,7 +11312,32 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Formules actives de ce prestataire, du prix le plus bas au plus élevé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PublicServicePackDto"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {}
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "summary": "List the active service packs of a provider",
@@ -10836,7 +11863,32 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Agenda hebdomadaire, trié par jour puis par heure de début",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ProviderAvailabilitySlotDto"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {}
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "summary": "Get the weekly availability of a provider",
@@ -10860,7 +11912,32 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Absences exceptionnelles, de la plus proche à la plus lointaine",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ProviderUnavailabilityDto"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {}
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "summary": "Get the exceptional unavailabilities of a provider",
@@ -12863,6 +13940,63 @@
         "type": "object",
         "properties": {}
       },
+      "FileDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "ownerId": {
+            "type": "object",
+            "nullable": true,
+            "description": "Compte propriétaire ; null pour un fichier produit par le système"
+          },
+          "originalName": {
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "size": {
+            "type": "number",
+            "description": "Taille en octets"
+          },
+          "storageKey": {
+            "type": "string",
+            "description": "Clé de stockage interne, calculée par le serveur"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "authenticated",
+              "restricted",
+              "sensitive"
+            ],
+            "description": "Seules `restricted` et `sensitive` peuvent être demandées à l'envoi. `public` est posée par le serveur quand le fichier devient un avatar ou une réalisation de portfolio."
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "disabledAt": {
+            "type": "object",
+            "nullable": true,
+            "description": "Renseignée quand le fichier a été désactivé ; il n'est alors plus lisible"
+          }
+        },
+        "required": [
+          "id",
+          "ownerId",
+          "originalName",
+          "mimeType",
+          "size",
+          "storageKey",
+          "visibility",
+          "createdAt",
+          "disabledAt"
+        ]
+      },
       "UpdateUserStatusBodyDto": {
         "type": "object",
         "properties": {}
@@ -14705,6 +15839,210 @@
         "type": "object",
         "properties": {}
       },
+      "DisputeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "missionId": {
+            "type": "string"
+          },
+          "openedBy": {
+            "type": "object",
+            "nullable": true,
+            "description": "Utilisateur à l'origine du litige"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "description": {
+            "type": "object",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "in_review",
+              "waiting_client",
+              "waiting_provider",
+              "resolved",
+              "rejected",
+              "closed"
+            ]
+          },
+          "assignedTo": {
+            "type": "object",
+            "nullable": true,
+            "description": "Agent de support en charge, null tant qu'aucun n'est assigné"
+          },
+          "decision": {
+            "type": "object",
+            "nullable": true,
+            "description": "Décision finale, renseignée à la résolution"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "missionId",
+          "openedBy",
+          "reason",
+          "description",
+          "status",
+          "assignedTo",
+          "decision",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "DisputeMessageDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "disputeId": {
+            "type": "string"
+          },
+          "senderId": {
+            "type": "object",
+            "nullable": true
+          },
+          "message": {
+            "type": "string"
+          },
+          "internalOnly": {
+            "type": "boolean",
+            "description": "Toujours false sur cette route"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "disputeId",
+          "senderId",
+          "message",
+          "internalOnly",
+          "createdAt"
+        ]
+      },
+      "DisputeFileDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "originalName": {
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "size": {
+            "type": "object",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "originalName",
+          "mimeType",
+          "size"
+        ]
+      },
+      "DisputeDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "missionId": {
+            "type": "string"
+          },
+          "openedBy": {
+            "type": "object",
+            "nullable": true,
+            "description": "Utilisateur à l'origine du litige"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "description": {
+            "type": "object",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "in_review",
+              "waiting_client",
+              "waiting_provider",
+              "resolved",
+              "rejected",
+              "closed"
+            ]
+          },
+          "assignedTo": {
+            "type": "object",
+            "nullable": true,
+            "description": "Agent de support en charge, null tant qu'aucun n'est assigné"
+          },
+          "decision": {
+            "type": "object",
+            "nullable": true,
+            "description": "Décision finale, renseignée à la résolution"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "messages": {
+            "description": "Messages visibles des parties, du plus ancien au plus récent",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DisputeMessageDto"
+            }
+          },
+          "files": {
+            "description": "Pièces jointes, à lire via GET /files/:id/content",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DisputeFileDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "missionId",
+          "openedBy",
+          "reason",
+          "description",
+          "status",
+          "assignedTo",
+          "decision",
+          "createdAt",
+          "updatedAt",
+          "messages",
+          "files"
+        ]
+      },
       "CreateCategoryBodyDto": {
         "type": "object",
         "properties": {}
@@ -14736,6 +16074,189 @@
       "CreateAvailabilityBodyDto": {
         "type": "object",
         "properties": {}
+      },
+      "PublicServiceTypeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "description": {
+            "type": "object",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "description"
+        ]
+      },
+      "PublicCategoryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "description": {
+            "type": "object",
+            "nullable": true
+          },
+          "iconFileId": {
+            "type": "object",
+            "nullable": true,
+            "description": "Icône à lire via GET /files/:id/content"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "displayOrder": {
+            "type": "number"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "serviceTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicServiceTypeDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "description",
+          "iconFileId",
+          "active",
+          "displayOrder",
+          "createdAt",
+          "updatedAt",
+          "serviceTypes"
+        ]
+      },
+      "ZoneCityDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug"
+        ]
+      },
+      "PublicZoneDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "object",
+            "nullable": true
+          },
+          "longitude": {
+            "type": "object",
+            "nullable": true
+          },
+          "radiusKm": {
+            "type": "object",
+            "nullable": true,
+            "description": "Rayon couvert, en kilomètres"
+          },
+          "city": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ZoneCityDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "latitude",
+          "longitude",
+          "radiusKm",
+          "city"
+        ]
+      },
+      "NearbyZoneDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "object",
+            "nullable": true
+          },
+          "longitude": {
+            "type": "object",
+            "nullable": true
+          },
+          "radiusKm": {
+            "type": "object",
+            "nullable": true,
+            "description": "Rayon couvert, en kilomètres"
+          },
+          "city": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ZoneCityDto"
+              }
+            ]
+          },
+          "distanceKm": {
+            "type": "number",
+            "description": "Distance entre le point demandé et le CENTRE de la zone, en kilomètres"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "latitude",
+          "longitude",
+          "radiusKm",
+          "city",
+          "distanceKm"
+        ]
       },
       "ServicePackDto": {
         "type": "object",
@@ -14861,6 +16382,47 @@
       "UpdateServicePackOptionBodyDto": {
         "type": "object",
         "properties": {}
+      },
+      "PublicServicePackDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "object",
+            "nullable": true
+          },
+          "price": {
+            "type": "number"
+          },
+          "durationMinutes": {
+            "type": "number"
+          },
+          "serviceId": {
+            "type": "string"
+          },
+          "serviceTitle": {
+            "type": "string"
+          },
+          "serviceType": {
+            "type": "string",
+            "description": "Nom du type de service (ex. « Réparation de fuite »)"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "price",
+          "durationMinutes",
+          "serviceId",
+          "serviceTitle",
+          "serviceType"
+        ]
       },
       "ProviderAvailabilitySlotDto": {
         "type": "object",

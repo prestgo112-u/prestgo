@@ -12,7 +12,13 @@ import { Public } from "../../common/decorators/public.decorator.js";
 import type { AuthenticatedRequest } from "../../common/guards/permissions.guard.js";
 import { ok } from "../../common/contracts/api-response.js";
 import { ApiEnvelopeResponse, ApiErrorResponse } from "../../common/openapi/api-envelope.decorator.js";
-import { ServicePackDto, ServicePackOptionDto, ServicePackOptionListItemDto } from "./response-dto.js";
+import {
+  PublicCategoryDto,
+  PublicServicePackDto,
+  ServicePackDto,
+  ServicePackOptionDto,
+  ServicePackOptionListItemDto
+} from "./response-dto.js";
 
 /** 403 commun aux routes `providers/me/*` : voir `ProviderContextService.requireProviderId`. */
 const NO_PROVIDER_PROFILE = "Authentification requise, ou ce compte n'a pas de profil prestataire";
@@ -27,6 +33,10 @@ export class PublicCategoriesController {
   @Public()
   @Get()
   @ApiOperation({ summary: "List active categories with their service types" })
+  @ApiEnvelopeResponse(PublicCategoryDto, {
+    isArray: true,
+    description: "Catégories actives, triées par displayOrder puis par nom, avec leurs types de service actifs"
+  })
   async list() {
     return ok(await this.catalog.listPublicCategories());
   }
@@ -129,6 +139,10 @@ export class ProviderServicePacksController {
   @Public()
   @Get(":id/service-packs")
   @ApiOperation({ summary: "List the active service packs of a provider" })
+  @ApiEnvelopeResponse(PublicServicePackDto, {
+    isArray: true,
+    description: "Formules actives de ce prestataire, du prix le plus bas au plus élevé"
+  })
   async listForProvider(@Param("id") id: string) {
     return ok(await this.catalog.listProviderPacks(id));
   }

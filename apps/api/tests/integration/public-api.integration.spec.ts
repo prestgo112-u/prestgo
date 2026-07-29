@@ -40,6 +40,78 @@ describe("API publique", () => {
     });
 
     /**
+     * Écart n°16 : ces routes n'avaient aucun DTO de réponse Swagger, leur
+     * forme n'était donc pas contractualisée. Ces assertions verrouillent ce
+     * que les DTO déclarent désormais.
+     */
+    it("expose une forme stable pour /categories, /zones et /zones/nearby", async () => {
+      const categories = await api(app).get("/categories");
+      expect(Object.keys(categories.body.data[0]).sort()).toEqual([
+        "active",
+        "createdAt",
+        "description",
+        "displayOrder",
+        "iconFileId",
+        "id",
+        "name",
+        "serviceTypes",
+        "slug",
+        "updatedAt"
+      ]);
+      expect(Object.keys(categories.body.data[0].serviceTypes[0]).sort()).toEqual([
+        "description",
+        "id",
+        "name",
+        "slug"
+      ]);
+
+      const zones = await api(app).get("/zones");
+      expect(Object.keys(zones.body.data[0]).sort()).toEqual([
+        "city",
+        "id",
+        "latitude",
+        "longitude",
+        "name",
+        "radiusKm"
+      ]);
+
+      const proches = await api(app).get("/zones/nearby?latitude=5.35&longitude=-3.98&radiusKm=20");
+      expect(proches.status).toBe(200);
+      expect(proches.body.data.length).toBeGreaterThan(0);
+      // Même forme, plus la distance calculée.
+      expect(Object.keys(proches.body.data[0]).sort()).toEqual([
+        "city",
+        "distanceKm",
+        "id",
+        "latitude",
+        "longitude",
+        "name",
+        "radiusKm"
+      ]);
+      // Triées de la plus proche à la plus lointaine.
+      const distances = proches.body.data.map((z: { distanceKm: number }) => z.distanceKm);
+      expect(distances).toEqual([...distances].sort((a: number, b: number) => a - b));
+    });
+
+    it("expose une forme stable pour /providers/:id/service-packs", async () => {
+      const packs = await api(app).get(`/providers/${providerId}/service-packs`);
+
+      expect(packs.status).toBe(200);
+      expect(packs.body.data.length).toBeGreaterThan(0);
+      // Le service APLATIT la relation : pas de `providerService` imbriqué.
+      expect(Object.keys(packs.body.data[0]).sort()).toEqual([
+        "description",
+        "durationMinutes",
+        "id",
+        "price",
+        "serviceId",
+        "serviceTitle",
+        "serviceType",
+        "title"
+      ]);
+    });
+
+    /**
      * Écart n°6 du cahier des charges mobile : les six réglages qui pilotent
      * des règles visibles par l'utilisateur ne se lisaient que par
      * `/admin/settings`. L'application devait les coder en dur, et mentait dès
