@@ -1,0 +1,160 @@
+{
+  "_source": "GET /providers/search — provider-search.controller.ts:41, provider-search.service.ts",
+  "_note": "Seule route de cette phase à être **paginée** : `data` est un tableau et `meta` porte page/limit/total. `limit` plafonne à 50, contre 100 ailleurs.",
+
+  "firstPage": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "p-4c8e1a05-7b3d-4f62-9e08-1a5c7d9e0b3f",
+          "publicName": "Adjoua Plomberie",
+          "score": 4.8,
+          "reviewsCount": 12,
+          "distanceKm": 1.24,
+          "categories": ["Plomberie"],
+          "startingPrice": 5000,
+          "avatarFileId": "file-51111111-1111-4111-8111-111111111111",
+          "availableNow": true
+        },
+        {
+          "_note": "Sans avis : l'écran affiche « Nouveau », jamais une note de 0 (FR-026).",
+          "id": "p-5d9f2b16-8c4e-4073-af19-2b6d8e0f1c40",
+          "publicName": "Kofi Services",
+          "score": 0,
+          "reviewsCount": 0,
+          "distanceKm": 3.7,
+          "categories": ["Plomberie", "Électricité"],
+          "startingPrice": 8000,
+          "avatarFileId": null,
+          "availableNow": false
+        },
+        {
+          "_note": "Sans position demandée, `distanceKm` est nul ; sans formule tarifée, `startingPrice` l'est aussi. Les deux se masquent.",
+          "id": "p-6e0a3c27-9d5f-4184-b02a-3c7e9f102d51",
+          "publicName": "Ama Électricité",
+          "score": 4.2,
+          "reviewsCount": 3,
+          "distanceKm": null,
+          "categories": ["Électricité"],
+          "startingPrice": null,
+          "avatarFileId": null,
+          "availableNow": true
+        }
+      ],
+      "meta": { "page": 1, "limit": 20, "total": 42 }
+    }
+  },
+
+  "secondPage": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "p-7f1b4d38-0e60-4295-c13b-4d8f0a213e62",
+          "publicName": "Yao Dépannage",
+          "score": 3.9,
+          "reviewsCount": 7,
+          "distanceKm": 6.05,
+          "categories": ["Plomberie"],
+          "startingPrice": 12000,
+          "avatarFileId": null,
+          "availableNow": true
+        }
+      ],
+      "meta": { "page": 2, "limit": 20, "total": 42 }
+    }
+  },
+
+  "lastPage": {
+    "_note": "`page * limit >= total` : le défilement continu s'arrête ici.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "p-80215e49-1f71-43a6-d24c-5e901b324f73",
+          "publicName": "Dernier résultat",
+          "score": 5,
+          "reviewsCount": 1,
+          "distanceKm": 9.9,
+          "categories": ["Jardinage"],
+          "startingPrice": 3000,
+          "avatarFileId": null,
+          "availableNow": true
+        }
+      ],
+      "meta": { "page": 3, "limit": 20, "total": 41 }
+    }
+  },
+
+  "empty": {
+    "_note": "Aucun résultat : l'écran propose d'élargir le rayon et de retirer les filtres (FR-025).",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [],
+      "meta": { "page": 1, "limit": 20, "total": 0 }
+    }
+  },
+
+  "distanceSortWithoutPosition": {
+    "_note": "⚠️ L'application ne doit JAMAIS provoquer ce refus : le tri « distance » est rendu indisponible tant qu'aucune position n'est fournie (scénario 2.2).",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Le tri par distance exige latitude et longitude",
+      "errors": [],
+      "meta": { "correlationId": "aa11bb22-cc33-4d44-8e55-ff6677889900" }
+    }
+  },
+
+  "dateWithoutTime": {
+    "_note": "Même règle : date et heure sont indissociables dans un seul sélecteur (scénario 2.3).",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Indiquez à la fois « date » et « startTime » pour filtrer sur un créneau",
+      "errors": [],
+      "meta": { "correlationId": "bb22cc33-dd44-4e55-8f66-001122334455" }
+    }
+  },
+
+  "limitTooLarge": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "limit ne peut pas dépasser 50 sur la recherche",
+      "errors": [
+        {
+          "field": "limit",
+          "code": "validation_error",
+          "message": "limit ne peut pas dépasser 50 sur la recherche"
+        }
+      ],
+      "meta": { "correlationId": "cc33dd44-ee55-4f66-8077-112233445566" }
+    }
+  },
+
+  "unknownSort": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Tri accepté : distance, rating, recent",
+      "errors": [
+        {
+          "field": "sort",
+          "code": "validation_error",
+          "message": "Tri accepté : distance, rating, recent"
+        }
+      ],
+      "meta": { "correlationId": "dd44ee55-ff66-4077-8188-223344556677" }
+    }
+  }
+}

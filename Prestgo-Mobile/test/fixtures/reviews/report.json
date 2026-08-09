@@ -1,0 +1,48 @@
+{
+  "_source": "POST /reviews/{id}/report (opération 47) — FR-073, data-model §6.",
+  "_note": "Motif de 3 à 500 caractères, impossible sur ses propres avis, 20 signalements par jour. Le doublon (409) devient la mention « déjà signalé » à l'écran (scénario 9.4) — l'avis signalé RESTE visible.",
+
+  "reported": {
+    "status": 201,
+    "body": {
+      "success": true,
+      "message": "Signalement transmis à la modération",
+      "data": {
+        "id": "6d5e4f3a-2b1c-4d0e-8f9a-8b7c6d5e4f3a",
+        "reviewId": "8b7c6d5e-4f3a-4b2c-8d1e-0f9a8b7c6d5e",
+        "createdAt": "2026-07-31T09:14:56.831Z"
+      }
+    }
+  },
+
+  "alreadyReported": {
+    "_note": "Deuxième signalement du même avis : mention « déjà signalé », pas une erreur brute.",
+    "status": 409,
+    "body": {
+      "success": false,
+      "message": "Vous avez déjà signalé cet avis",
+      "errors": [],
+      "meta": { "correlationId": "cc339baa-5566-477e-899a-bbccddeef132" }
+    }
+  },
+
+  "ownReview": {
+    "status": 403,
+    "body": {
+      "success": false,
+      "message": "Vous ne pouvez pas signaler votre propre avis",
+      "errors": [],
+      "meta": { "correlationId": "dd44acbb-6677-488f-8aab-ccddeeff0243" }
+    }
+  },
+
+  "rateLimited": {
+    "status": 429,
+    "body": {
+      "success": false,
+      "message": "Limite de signalements atteinte : réessayez demain",
+      "errors": [],
+      "meta": { "correlationId": "ee55bdcc-7788-4990-8bbc-ddeeff011354" }
+    }
+  }
+}

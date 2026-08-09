@@ -1,0 +1,149 @@
+{
+  "_source": "POST /missions/:id/{accept,refuse,start,complete,cancel} — §4.4 du cahier des charges, MissionTransitionResultDto commun aux cinq actions.",
+  "_note": "Chaque action vérifie D'ABORD que l'appelant est le prestataire de la mission (403), PUIS que le statut de départ correspond exactement (400 « Action impossible depuis le statut … »). Aucune transition n'est jamais rejouée automatiquement (porte G4, FR-046).",
+
+  "accepted": {
+    "_note": "POST /missions/:id/accept — pending_provider → confirmed, sans corps.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Mission acceptée",
+      "data": {
+        "missionId": "a75221c8-03a0-4dc7-a4c0-c0047ad0713c",
+        "previousStatus": "pending_provider",
+        "status": "confirmed",
+        "late": false
+      }
+    }
+  },
+
+  "refused": {
+    "_note": "POST /missions/:id/refuse — pending_provider → cancelled, corps { reason } (3–500).",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Mission refusée",
+      "data": {
+        "missionId": "a75221c8-03a0-4dc7-a4c0-c0047ad0713c",
+        "previousStatus": "pending_provider",
+        "status": "cancelled",
+        "late": false
+      }
+    }
+  },
+
+  "started": {
+    "_note": "POST /missions/:id/start — confirmed → in_progress, sans corps, fenêtre ouverte.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Mission démarrée",
+      "data": {
+        "missionId": "c1883fe0-77a9-4b1e-a4d2-8b64cd07e913",
+        "previousStatus": "confirmed",
+        "status": "in_progress",
+        "late": false
+      }
+    }
+  },
+
+  "completed": {
+    "_note": "POST /missions/:id/complete — in_progress → completed, sans corps.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Mission terminée",
+      "data": {
+        "missionId": "b86332d9-14a0-4ec8-b5d0-d0158ae1824d",
+        "previousStatus": "in_progress",
+        "status": "completed",
+        "late": false
+      }
+    }
+  },
+
+  "cancelled": {
+    "_note": "POST /missions/:id/cancel côté prestataire — confirmed → cancelled, hors préavis : late false.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Mission annulée",
+      "data": {
+        "missionId": "c1883fe0-77a9-4b1e-a4d2-8b64cd07e913",
+        "previousStatus": "confirmed",
+        "status": "cancelled",
+        "late": false
+      }
+    }
+  },
+
+  "cancelledLate": {
+    "_note": "Annulation sous le préavis en vigueur : acceptée ET marquée late — le verdict est celui du service, affiché tel quel.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Mission annulée. L'annulation est enregistrée comme tardive.",
+      "data": {
+        "missionId": "c1883fe0-77a9-4b1e-a4d2-8b64cd07e913",
+        "previousStatus": "confirmed",
+        "status": "cancelled",
+        "late": true
+      }
+    }
+  },
+
+  "startTooEarly": {
+    "_note": "start hors fenêtre — message INTERPOLÉ avec la valeur en vigueur (mission.start_window_minutes) : il prime sur l'estimation locale.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Vous pourrez démarrer cette mission au plus tôt 120 minutes avant l'heure prévue",
+      "errors": [],
+      "meta": { "correlationId": "cc330044-5566-4778-a99a-bbccddeef203" }
+    }
+  },
+
+  "invalidFromStatus": {
+    "_note": "Action sur un statut qui ne la permet pas — le statut a changé entre l'affichage et l'envoi : recharger l'état réel, ne JAMAIS rejouer.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Action impossible depuis le statut « completed »",
+      "errors": [],
+      "meta": { "correlationId": "dd440055-6677-4889-b0ab-ccddeeff0314" }
+    }
+  },
+
+  "cancelOnPending": {
+    "_note": "cancel sur pending_provider : avant acceptation on REFUSE, on n'annule pas — les deux boutons ne coexistent jamais.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Cette mission n'est pas encore acceptée : utilisez le refus (POST /missions/:id/refuse)",
+      "errors": [],
+      "meta": { "correlationId": "ee550066-7788-499a-c1bc-ddeeff001425" }
+    }
+  },
+
+  "missingReason": {
+    "_note": "cancelled exige TOUJOURS un motif — refus, annulation (FR-044).",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Un motif est obligatoire pour passer au statut \"cancelled\"",
+      "errors": [],
+      "meta": { "correlationId": "ff660077-8899-4aab-d2cd-eeff00112536" }
+    }
+  },
+
+  "notProvider": {
+    "_note": "L'appelant n'est pas le prestataire de la mission — vérifié AVANT le statut.",
+    "status": 403,
+    "body": {
+      "success": false,
+      "message": "Vous n'êtes pas le prestataire de cette mission",
+      "errors": [],
+      "meta": { "correlationId": "00770088-99aa-4bbc-e3de-ff0011223647" }
+    }
+  }
+}

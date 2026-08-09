@@ -1,0 +1,167 @@
+{
+  "_source": "GET /providers/me/missions — §4.1 du cahier des charges, capture réelle du 2026-07-19 complétée des formes du tableau de bord (bloc demandes, bloc missions du jour).",
+  "_note": "MÊME MissionListItemDto que /me/missions, mais tri par défaut `scheduledAt` CROISSANT (mission-booking.service.ts:325-331) : le prestataire veut voir ce qui arrive d'abord. Ne jamais retrier localement (FR-038). Côté prestataire, les champs utiles sont clientName, city, commune, packTitle, durationMinutes, quotedAmount, scheduledAt — providerName le désigne lui-même.",
+
+  "pendingRequests": {
+    "_note": "Bloc « En attente de mon action » : ?status=pending_provider&limit=20. Compteur = meta.total. `createdAt` alimente le compte à rebours d'expiration (createdAt + missionPendingExpiryHours).",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "a75221c8-03a0-4dc7-a4c0-c0047ad0713c",
+          "status": "pending_provider",
+          "scheduledAt": "2026-08-06T09:00:00.000Z",
+          "quotedAmount": 25000,
+          "durationMinutes": 90,
+          "packTitle": "Installation de chauffe-eau",
+          "clientName": "Awa Client",
+          "providerId": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+          "providerName": "Kofi Plomberie",
+          "providerAvatarFileId": null,
+          "city": "Abidjan",
+          "commune": "Cocody",
+          "createdAt": "2026-07-30T08:05:44.120Z"
+        },
+        {
+          "id": "f30772b4-58e6-4c3d-9826-2650df36d792",
+          "status": "pending_provider",
+          "scheduledAt": "2026-08-08T15:30:00.000Z",
+          "quotedAmount": 12000,
+          "durationMinutes": 45,
+          "packTitle": "Remplacement de robinet",
+          "clientName": "Mariam Kouassi",
+          "providerId": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+          "providerName": "Kofi Plomberie",
+          "providerAvatarFileId": null,
+          "city": "Abidjan",
+          "commune": "Marcory",
+          "createdAt": "2026-07-30T10:12:03.551Z"
+        }
+      ],
+      "meta": { "page": 1, "limit": 20, "total": 2 }
+    }
+  },
+
+  "today": {
+    "_note": "Bloc « Missions du jour » : ?from=2026-08-05&to=2026-08-05&status=confirmed,in_progress&limit=50 — `from` et `to` au même jour, la borne `to` est INCLUSIVE (le serveur ajoute un jour). Tri croissant : le matin d'abord.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "b86332d9-14a0-4ec8-b5d0-d0158ae1824d",
+          "status": "in_progress",
+          "scheduledAt": "2026-08-05T08:00:00.000Z",
+          "quotedAmount": null,
+          "durationMinutes": 60,
+          "packTitle": "Réparation de fuite simple",
+          "clientName": "Awa Client",
+          "providerId": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+          "providerName": "Kofi Plomberie",
+          "providerAvatarFileId": null,
+          "city": "Abidjan",
+          "commune": "Cocody",
+          "createdAt": "2026-07-19T11:16:12.582Z"
+        },
+        {
+          "id": "c1883fe0-77a9-4b1e-a4d2-8b64cd07e913",
+          "status": "confirmed",
+          "scheduledAt": "2026-08-05T14:00:00.000Z",
+          "quotedAmount": 32000,
+          "durationMinutes": 120,
+          "packTitle": "Débouchage canalisation",
+          "clientName": "Mariam Kouassi",
+          "providerId": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+          "providerName": "Kofi Plomberie",
+          "providerAvatarFileId": null,
+          "city": "Abidjan",
+          "commune": "Plateau",
+          "createdAt": "2026-07-28T16:40:03.008Z"
+        }
+      ],
+      "meta": { "page": 1, "limit": 50, "total": 2 }
+    }
+  },
+
+  "planning": {
+    "_note": "Onglet « Planning » : ?status=confirmed,in_progress sans bornes de dates. TRI CROISSANT vérifié : la plus proche d'abord — l'inverse exact du client.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "b86332d9-14a0-4ec8-b5d0-d0158ae1824d",
+          "status": "in_progress",
+          "scheduledAt": "2026-08-05T08:00:00.000Z",
+          "quotedAmount": null,
+          "durationMinutes": 60,
+          "packTitle": "Réparation de fuite simple",
+          "clientName": "Awa Client",
+          "providerId": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+          "providerName": "Kofi Plomberie",
+          "providerAvatarFileId": null,
+          "city": "Abidjan",
+          "commune": "Cocody",
+          "createdAt": "2026-07-19T11:16:12.582Z"
+        },
+        {
+          "id": "c1883fe0-77a9-4b1e-a4d2-8b64cd07e913",
+          "status": "confirmed",
+          "scheduledAt": "2026-08-05T14:00:00.000Z",
+          "quotedAmount": 32000,
+          "durationMinutes": 120,
+          "packTitle": "Débouchage canalisation",
+          "clientName": "Mariam Kouassi",
+          "providerId": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+          "providerName": "Kofi Plomberie",
+          "providerAvatarFileId": null,
+          "city": "Abidjan",
+          "commune": "Plateau",
+          "createdAt": "2026-07-28T16:40:03.008Z"
+        },
+        {
+          "id": "d4995fe1-88b0-4c2f-b5e3-9c75de18fa24",
+          "status": "confirmed",
+          "scheduledAt": "2026-08-09T10:00:00.000Z",
+          "quotedAmount": 15000,
+          "durationMinutes": 60,
+          "packTitle": "Réparation de fuite simple",
+          "clientName": "Ibrahim Diallo",
+          "providerId": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+          "providerName": "Kofi Plomberie",
+          "providerAvatarFileId": null,
+          "city": "Abidjan",
+          "commune": "Cocody",
+          "createdAt": "2026-07-29T09:33:27.410Z"
+        }
+      ],
+      "meta": { "page": 1, "limit": 20, "total": 3 }
+    }
+  },
+
+  "empty": {
+    "_note": "Aucune mission — accueil « Aucune mission pour aujourd'hui » sur le tableau de bord.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [],
+      "meta": { "page": 1, "limit": 20, "total": 0 }
+    }
+  },
+
+  "unknownStatus": {
+    "_note": "Même règle que côté client : une liste contenant UN SEUL statut inconnu est refusée EN BLOC.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Statut de mission inconnu",
+      "errors": [],
+      "meta": { "correlationId": "bb220033-4455-4667-9889-aabbccdde1f2" }
+    }
+  }
+}

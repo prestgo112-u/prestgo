@@ -1,0 +1,22 @@
+{
+  "_source": "PATCH /messages/threads/:id/read — §3.11 du cahier des charges. Sans corps ; à appeler à l'OUVERTURE de la conversation.",
+  "_note": "Réponse { updated: n }. Après l'appel, rafraîchir /me/threads et le compteur global (table d'invalidation de api-consumption.md).",
+
+  "two": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "2 message(s) marqué(s) lu(s)",
+      "data": { "updated": 2 }
+    }
+  },
+
+  "none": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "0 message(s) marqué(s) lu(s)",
+      "data": { "updated": 0 }
+    }
+  }
+}

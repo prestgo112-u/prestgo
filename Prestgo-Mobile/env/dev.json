@@ -1,0 +1,7 @@
+{
+  "APP_ENV": "dev",
+  "API_BASE_URL": "http://10.0.2.2:3000/api/v1",
+  "SENTRY_ENABLED": false,
+  "SENTRY_DSN": "",
+  "NETWORK_LOGS_ENABLED": true
+}

@@ -1,0 +1,70 @@
+# Configuration de la génération de code.
+#
+#   dart run build_runner build --delete-conflicting-outputs
+#
+# Quatre générateurs :
+#   - freezed            → modèles immuables (R9)
+#   - json_serializable  → sérialisation des DTO (R9)
+#   - riverpod_generator → providers annotés (R1)
+#   - drift_dev          → base locale de cache de lecture (R2)
+
+targets:
+  $default:
+    builders:
+      # --- Modèles immuables -----------------------------------------------------
+      freezed:
+        options:
+          # `copyWith` et `==` partout : les modèles sont comparés dans les tests de
+          # contrat et recopiés par les contrôleurs de brouillon.
+          copy_with: true
+          equal: true
+          # Pas de `map`/`when` par défaut : la plupart des modèles sont de simples
+          # enregistrements, les unions restent explicites là où elles sont utiles.
+          map: false
+          when: false
+        generate_for:
+          include:
+            - lib/**/domain/**.dart
+            - lib/**/data/dto/**.dart
+            - lib/core/**.dart
+
+      # --- Sérialisation ---------------------------------------------------------
+      json_serializable:
+        options:
+          # L'API sert et attend du camelCase (cf. contracts/api-envelope.md).
+          field_rename: none
+          # Les objets imbriqués sont sérialisés explicitement, sinon `toJson()`
+          # renvoie l'instance au lieu d'une carte.
+          explicit_to_json: true
+          # `PATCH /me` est partiel : un champ absent ne doit pas partir à `null`.
+          include_if_null: false
+          # Une réponse dont un champ change de type échoue à la désérialisation avec
+          # le nom du champ — indispensable aux tests de contrat (porte G7).
+          checked: true
+          create_factory: true
+          create_to_json: true
+        generate_for:
+          include:
+            - lib/**/domain/**.dart
+            - lib/**/data/dto/**.dart
+            - lib/core/**.dart
+
+      # --- Providers -------------------------------------------------------------
+      riverpod_generator:
+        options:
+          provider_name_suffix: Provider
+          provider_family_name_suffix: Provider
+
+      # --- Cache de lecture persistant -------------------------------------------
+      drift_dev:
+        options:
+          # Dates stockées en ISO-8601 texte : lisibles à l'inspection et immunisées
+          # au fuseau de l'appareil (R11).
+          store_date_time_values_as_text: true
+          named_parameters: true
+          # Le cache n'a pas de logique métier : pas de classes de données générées
+          # au-delà du nécessaire.
+          skip_verification_code: true
+        generate_for:
+          include:
+            - lib/core/cache/**.dart

@@ -1,0 +1,82 @@
+{
+  "_source": "POST /messages/threads/:id/messages — §3.11 du cahier des charges. Corps : { message (1–4000), fileIds? (UUID uniques, ≤ 3) }.",
+  "_note": "201 = envoi confirmé, `data` = le message créé. AUCUN rejeu automatique sur cette route (pas de clé d'idempotence) : bulle en échec + « Renvoyer » manuel.",
+
+  "created": {
+    "status": 201,
+    "body": {
+      "success": true,
+      "message": "Message envoyé",
+      "data": {
+        "id": "a1e64b02-7c31-49dd-8410-52c86e0acdc7",
+        "senderId": "c4f8a2e1-9d3b-4e5a-8f6c-1a2b3c4d5e6f",
+        "message": "Bonjour, je serai là vers 14h.",
+        "createdAt": "2026-07-30T10:12:05.487Z",
+        "readAt": null,
+        "files": []
+      }
+    }
+  },
+
+  "createdWithFiles": {
+    "status": 201,
+    "body": {
+      "success": true,
+      "message": "Message envoyé",
+      "data": {
+        "id": "c2b91f4e-08a6-45c0-9f3d-7e11ab60c944",
+        "senderId": "c4f8a2e1-9d3b-4e5a-8f6c-1a2b3c4d5e6f",
+        "message": "Voici l'emplacement exact.",
+        "createdAt": "2026-07-30T10:15:52.101Z",
+        "readAt": null,
+        "files": [
+          {
+            "file": {
+              "id": "file-plan-1",
+              "originalName": "compteur.jpg",
+              "mimeType": "image/jpeg",
+              "size": 245678
+            }
+          }
+        ]
+      }
+    }
+  },
+
+  "closed": {
+    "_note": "Fil non `open` : le champ de saisie doit être masqué EN AMONT (scénario 6.4) — cette réponse est le filet du service.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Conversation clôturée",
+      "meta": { "correlationId": "corr-us6-400-closed" }
+    }
+  },
+
+  "duplicateFiles": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Le même fichier est joint plusieurs fois",
+      "meta": { "correlationId": "corr-us6-400-dup" }
+    }
+  },
+
+  "tooManyFiles": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Pas plus de 3 pièces jointes par message",
+      "meta": { "correlationId": "corr-us6-400-many" }
+    }
+  },
+
+  "notParty": {
+    "status": 403,
+    "body": {
+      "success": false,
+      "message": "Vous n'êtes pas partie à la mission de cette conversation",
+      "meta": { "correlationId": "corr-us6-403-send" }
+    }
+  }
+}

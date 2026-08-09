@@ -1,0 +1,145 @@
+# Analyse statique du paquet `prestgo_mobile`.
+#
+# Deux responsabilités :
+#   1. des lints stricts appliqués à tout le paquet ;
+#   2. la **règle de frontière d'import** entre modules (porte G5 du plan), déclarée
+#      plus bas sous la clé `prestgo_import_boundaries` et appliquée par
+#      `dart run tool/check_import_boundaries.dart`.
+#
+# Dart n'offre aucun lint natif d'interdiction d'import : la règle est donc déclarée
+# ici, à côté des autres règles d'analyse, et appliquée par l'outil dédié — appelé par
+# l'intégration continue juste après `flutter analyze`.
+
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  plugins:
+    - custom_lint
+
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+
+  errors:
+    # « `flutter analyze` sans avertissement » est une condition de revue (§3 de
+    # quickstart.md) : ce qui laisserait passer du code mort est traité en erreur.
+    missing_required_param: error
+    unused_import: error
+    unused_local_variable: error
+    unused_element: error
+    dead_code: error
+    body_might_complete_normally_catch_error: error
+    # Bruit sans valeur sur un projet généré (freezed pose ses annotations sur des
+    # constructeurs privés).
+    invalid_annotation_target: ignore
+
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/generated_plugin_registrant.dart"
+    - "lib/l10n/generated/**"
+    - "build/**"
+
+linter:
+  rules:
+    # — Sûreté —
+    always_declare_return_types: true
+    always_use_package_imports: true
+    avoid_dynamic_calls: true
+    avoid_slow_async_io: true
+    avoid_type_to_string: true
+    cancel_subscriptions: true
+    close_sinks: true
+    control_flow_in_finally: true
+    literal_only_boolean_expressions: true
+    no_adjacent_strings_in_list: true
+    test_types_in_equals: true
+    throw_in_finally: true
+    unnecessary_statements: true
+    unrelated_type_equality_checks: true
+    use_build_context_synchronously: true
+
+    # — Style et lisibilité —
+    avoid_redundant_argument_values: true
+    avoid_unused_constructor_parameters: true
+    directives_ordering: true
+    join_return_with_assignment: true
+    prefer_final_in_for_each: true
+    prefer_final_locals: true
+    prefer_single_quotes: true
+    require_trailing_commas: true
+    sort_child_properties_last: true
+    sort_constructors_first: true
+    unawaited_futures: true
+    unnecessary_lambdas: true
+    unnecessary_parenthesis: true
+    use_named_constants: true
+    use_super_parameters: true
+
+    # — Immutabilité des modèles (freezed) —
+    prefer_const_constructors: true
+    prefer_const_constructors_in_immutables: true
+    prefer_const_declarations: true
+    prefer_const_literals_to_create_immutables: true
+
+# ---------------------------------------------------------------------------
+# Règle de frontière d'import — porte G5 « Séparation des surfaces »
+# ---------------------------------------------------------------------------
+#
+# Lue par `tool/check_import_boundaries.dart`. Les chemins sont relatifs à la racine
+# du dépôt et s'entendent comme des préfixes de dossier.
+#
+prestgo_import_boundaries:
+  # Interdictions de dépendance dirigées.
+  rules:
+    - name: le_socle_ne_depend_d_aucune_feature
+      from: lib/core
+      deny:
+        - lib/features
+        - lib/app
+      message: >-
+        Le socle `lib/core/` ne dépend ni d'une fonctionnalité ni de la couche
+        applicative : inverser la dépendance (paramètre, rappel ou provider).
+
+    - name: shared_ne_depend_d_aucune_feature
+      from: lib/shared
+      deny:
+        - lib/features
+        - lib/app
+      message: >-
+        `lib/shared/` ne dépend d'aucune fonctionnalité : déplacer le code vraiment
+        partagé, ou le laisser dans la fonctionnalité qui le possède.
+
+    - name: les_intercepteurs_restent_dans_le_socle
+      from: lib/features
+      deny:
+        - lib/core/api/envelope_interceptor.dart
+        - lib/core/api/auth_interceptor.dart
+      message: >-
+        Les intercepteurs sont un détail du socle (porte G2) : une fonctionnalité
+        consomme `apiClientProvider`, `ApiEnvelope` et `ApiException`.
+
+  # Cloisonnement des deux surfaces de rôle : aucun import entre les groupes.
+  surfaces:
+    message: >-
+      Un module de la surface client n'importe pas la surface prestataire, et
+      réciproquement (porte G5) : passer par le socle `lib/core/` ou par une
+      fonctionnalité commune (`auth`, `profile`, `missions`, `messaging`,
+      `notifications`, `files`).
+    groups:
+      client:
+        - lib/features/search
+        - lib/features/booking
+        - lib/features/reviews
+        - lib/features/disputes
+      prestataire:
+        - lib/features/provider_onboarding
+        - lib/features/provider_space
+
+  # Une fonctionnalité n'atteint jamais la couche `data/` d'une autre fonctionnalité.
+  cross_feature_data:
+    enabled: true
+    message: >-
+      La couche `data/` d'une fonctionnalité lui appartient : exposer un provider ou
+      un modèle de domaine plutôt que d'importer le dépôt d'une autre fonctionnalité.

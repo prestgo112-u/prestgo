@@ -1,0 +1,23 @@
+{
+  "_source": "POST /auth/logout — auth.controller.ts:154, auth.service.ts:161",
+  "_note": "Route déclarée publique côté service, mais l'application envoie quand même l'en-tête d'autorisation ET le jeton de renouvellement : c'est ce qui ferme la bonne session plutôt que de se rabattre sur celle du jeton d'accès.",
+
+  "loggedOut": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Logged out",
+      "data": { "loggedOut": true }
+    }
+  },
+
+  "loggedOutWithoutValidToken": {
+    "_note": "Le service ne se plaint pas d'un jeton déjà invalide : la déconnexion réussit quand même. La purge locale, elle, a lieu dans tous les cas.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Logged out",
+      "data": { "loggedOut": true }
+    }
+  }
+}

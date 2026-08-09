@@ -1,0 +1,7 @@
+{
+  "APP_ENV": "prod",
+  "API_BASE_URL": "https://api.prestgo.test/api/v1",
+  "SENTRY_ENABLED": true,
+  "SENTRY_DSN": "",
+  "NETWORK_LOGS_ENABLED": false
+}

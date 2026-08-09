@@ -1,0 +1,214 @@
+{
+  "_source": "GET /me — me.controller.ts:67, me.service.ts:31",
+  "_note": "Source unique de l'aiguillage. `roles` (rôles d'administration) est renvoyé mais n'entre JAMAIS dans la décision de routage : seuls `status`, `hasProviderProfile` et `providerValidationStatus` comptent.",
+
+  "client": {
+    "_note": "client.demo@prestgo.test du jeu de démonstration.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "c4f8a2e1-9d3b-4e5a-8f6c-1a2b3c4d5e6f",
+        "firstName": "Awa",
+        "lastName": "Koné",
+        "email": "client.demo@prestgo.test",
+        "phone": "+2250700000001",
+        "status": "active",
+        "emailVerified": true,
+        "phoneVerified": true,
+        "roles": [],
+        "hasClientProfile": true,
+        "hasProviderProfile": false,
+        "providerId": null,
+        "providerValidationStatus": null,
+        "createdAt": "2026-06-02T08:30:00.000Z"
+      }
+    }
+  },
+
+  "clientWithUnverifiedPhone": {
+    "_note": "Compte historique : `hasClientProfile` à false alors que le compte est bien client. L'espace client s'ouvre sur `status` seul — c'est pourquoi RoutingProfile ne porte pas ce champ.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "d5a9b3f2-0e4c-4f6b-9a7d-2b3c4d5e6f70",
+        "firstName": "Yao",
+        "lastName": "N'Guessan",
+        "email": "yao.ancien@prestgo.test",
+        "phone": "+2250700000099",
+        "status": "active",
+        "emailVerified": true,
+        "phoneVerified": false,
+        "roles": [],
+        "hasClientProfile": false,
+        "hasProviderProfile": false,
+        "providerId": null,
+        "providerValidationStatus": null,
+        "createdAt": "2025-11-14T16:05:00.000Z"
+      }
+    }
+  },
+
+  "pendingAccount": {
+    "_note": "Inscrit mais pas encore activé. Ce compte ne peut pas se connecter — cette forme n'apparaît qu'après une activation partielle.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "9f1c2b7e-3d54-4a10-9b6e-2c7d8e5f4a31",
+        "firstName": null,
+        "lastName": null,
+        "email": "nouveau.client@prestgo.test",
+        "phone": null,
+        "status": "pending",
+        "emailVerified": false,
+        "phoneVerified": false,
+        "roles": [],
+        "hasClientProfile": true,
+        "hasProviderProfile": false,
+        "providerId": null,
+        "providerValidationStatus": null,
+        "createdAt": "2026-07-31T09:12:44.318Z"
+      }
+    }
+  },
+
+  "providerApproved": {
+    "_note": "provider.ready@prestgo.test — atterrit sur le tableau de bord prestataire, tout en gardant l'espace client.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "e6b0c4a3-1f5d-4a7c-8b9e-3c4d5e6f7081",
+        "firstName": "Adjoua",
+        "lastName": "Traoré",
+        "email": "provider.ready@prestgo.test",
+        "phone": "+2250700000002",
+        "status": "active",
+        "emailVerified": true,
+        "phoneVerified": true,
+        "roles": [],
+        "hasClientProfile": true,
+        "hasProviderProfile": true,
+        "providerId": "p-4c8e1a05-7b3d-4f62-9e08-1a5c7d9e0b3f",
+        "providerValidationStatus": "approved",
+        "createdAt": "2026-05-20T10:00:00.000Z"
+      }
+    }
+  },
+
+  "providerPendingReview": {
+    "_note": "kofi.plombier@prestgo.test — renvoyé au suivi de dossier, l'espace client reste ouvert.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "f7c1d5b4-206e-4b8d-9caf-4d5e6f708192",
+        "firstName": "Kofi",
+        "lastName": "Assamoi",
+        "email": "kofi.plombier@prestgo.test",
+        "phone": "+2250700000003",
+        "status": "active",
+        "emailVerified": true,
+        "phoneVerified": true,
+        "roles": [],
+        "hasClientProfile": true,
+        "hasProviderProfile": true,
+        "providerId": "p-5d9f2b16-8c4e-4073-af19-2b6d8e0f1c40",
+        "providerValidationStatus": "pending_review",
+        "createdAt": "2026-06-11T07:45:00.000Z"
+      }
+    }
+  },
+
+  "providerProfileIncomplete": {
+    "_note": "Profil prestataire tout juste créé : la reprise est la checklist, pas le suivi.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "08d2e6c5-317f-4c9e-adb0-5e6f70819203",
+        "firstName": "Ama",
+        "lastName": "Bamba",
+        "email": "ama.electricite@prestgo.test",
+        "phone": "+2250700000004",
+        "status": "active",
+        "emailVerified": true,
+        "phoneVerified": true,
+        "roles": [],
+        "hasClientProfile": true,
+        "hasProviderProfile": true,
+        "providerId": "p-6e0a3c27-9d5f-4184-b02a-3c7e9f102d51",
+        "providerValidationStatus": "profile_incomplete",
+        "createdAt": "2026-06-18T12:20:00.000Z"
+      }
+    }
+  },
+
+  "suspended": {
+    "_note": "Session encore techniquement valide, compte suspendu : le gardien renvoie à la connexion et l'appelant purge.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "19e3f7d6-4280-4daf-bec1-6f7081920314",
+        "firstName": "Sékou",
+        "lastName": "Diarra",
+        "email": "suspendu@prestgo.test",
+        "phone": null,
+        "status": "suspended",
+        "emailVerified": true,
+        "phoneVerified": false,
+        "roles": [],
+        "hasClientProfile": true,
+        "hasProviderProfile": false,
+        "providerId": null,
+        "providerValidationStatus": null,
+        "createdAt": "2026-01-09T09:00:00.000Z"
+      }
+    }
+  },
+
+  "admin": {
+    "_note": "admin@prestgo.test. `roles` est renseigné — et reste sans effet sur l'atterrissage : ce compte tombe sur l'accueil client comme n'importe quel autre.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "2af408e7-5391-4eb0-cfd2-708192031425",
+        "firstName": "Super",
+        "lastName": "Admin",
+        "email": "admin@prestgo.test",
+        "phone": null,
+        "status": "active",
+        "emailVerified": true,
+        "phoneVerified": false,
+        "roles": ["super_admin"],
+        "hasClientProfile": true,
+        "hasProviderProfile": false,
+        "providerId": null,
+        "providerValidationStatus": null,
+        "createdAt": "2026-05-01T00:00:00.000Z"
+      }
+    }
+  },
+
+  "unauthenticated": {
+    "status": 401,
+    "body": {
+      "success": false,
+      "message": "Bearer token required",
+      "errors": [],
+      "meta": { "correlationId": "90123456-789a-4f01-8899-aabbccddeeff" }
+    }
+  }
+}

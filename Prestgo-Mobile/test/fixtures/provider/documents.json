@@ -1,0 +1,262 @@
+{
+  "_source": "GET/POST /providers/me/documents, POST /files/upload — §2.2 P7 du cahier des charges (provider-documents-self.service.ts).",
+  "_note": "L'écran se construit depuis `requiredTypes` — jamais de type codé en dur. `missingTypes` = types sans justificatif exploitable (absent ou rejeté). `current` = dernière version par type. Un document `approved` ne se remplace pas ; un redépôt crée une VERSION ; un dépôt en `changes_requested` repasse le dossier en `pending_review` TOUT SEUL → recharger GET /providers/me après chaque dépôt.",
+
+  "emptyRequired": {
+    "_note": "Capture réelle, compte démo — aucun justificatif déposé.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "requiredTypes": ["id_card"],
+        "missingTypes": ["id_card"],
+        "documents": [],
+        "current": []
+      }
+    }
+  },
+
+  "withPending": {
+    "_note": "Un dépôt en attente d'examen est EXPLOITABLE : le type ne manque plus.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "requiredTypes": ["id_card"],
+        "missingTypes": [],
+        "documents": [
+          {
+            "id": "8b9c0d1e-2f3a-4b4c-8d5e-6f7a8b9c0d1e",
+            "type": "id_card",
+            "status": "pending",
+            "version": 1,
+            "rejectionReason": null,
+            "reviewedAt": null,
+            "createdAt": "2026-07-31T11:05:33.208Z",
+            "file": {
+              "id": "1f2e3d4c-5b6a-4788-9900-aabbccddeeff",
+              "originalName": "cni-recto.jpg",
+              "mimeType": "image/jpeg",
+              "size": 812304,
+              "visibility": "sensitive"
+            }
+          }
+        ],
+        "current": [
+          {
+            "id": "8b9c0d1e-2f3a-4b4c-8d5e-6f7a8b9c0d1e",
+            "type": "id_card",
+            "status": "pending",
+            "version": 1,
+            "rejectionReason": null,
+            "reviewedAt": null,
+            "createdAt": "2026-07-31T11:05:33.208Z",
+            "file": {
+              "id": "1f2e3d4c-5b6a-4788-9900-aabbccddeeff",
+              "originalName": "cni-recto.jpg",
+              "mimeType": "image/jpeg",
+              "size": 812304,
+              "visibility": "sensitive"
+            }
+          }
+        ]
+      }
+    }
+  },
+
+  "withRejected": {
+    "_note": "`rejectionReason` est LA donnée de l'écran de correction ; le type redevient manquant.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "requiredTypes": ["id_card"],
+        "missingTypes": ["id_card"],
+        "documents": [
+          {
+            "id": "8b9c0d1e-2f3a-4b4c-8d5e-6f7a8b9c0d1e",
+            "type": "id_card",
+            "status": "rejected",
+            "version": 1,
+            "rejectionReason": "Document illisible : la photo est floue, reprenez le recto en pleine lumière.",
+            "reviewedAt": "2026-07-31T15:40:12.905Z",
+            "createdAt": "2026-07-31T11:05:33.208Z",
+            "file": {
+              "id": "1f2e3d4c-5b6a-4788-9900-aabbccddeeff",
+              "originalName": "cni-recto.jpg",
+              "mimeType": "image/jpeg",
+              "size": 812304,
+              "visibility": "sensitive"
+            }
+          }
+        ],
+        "current": [
+          {
+            "id": "8b9c0d1e-2f3a-4b4c-8d5e-6f7a8b9c0d1e",
+            "type": "id_card",
+            "status": "rejected",
+            "version": 1,
+            "rejectionReason": "Document illisible : la photo est floue, reprenez le recto en pleine lumière.",
+            "reviewedAt": "2026-07-31T15:40:12.905Z",
+            "createdAt": "2026-07-31T11:05:33.208Z",
+            "file": {
+              "id": "1f2e3d4c-5b6a-4788-9900-aabbccddeeff",
+              "originalName": "cni-recto.jpg",
+              "mimeType": "image/jpeg",
+              "size": 812304,
+              "visibility": "sensitive"
+            }
+          }
+        ]
+      }
+    }
+  },
+
+  "withApprovedHistory": {
+    "_note": "Deux versions : la v2 approuvée est `current`, la v1 rejetée reste dans `documents` — l'agent voit l'ancienne à côté de la nouvelle.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "requiredTypes": ["id_card"],
+        "missingTypes": [],
+        "documents": [
+          {
+            "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e2f",
+            "type": "id_card",
+            "status": "approved",
+            "version": 2,
+            "rejectionReason": null,
+            "reviewedAt": "2026-08-01T09:14:27.640Z",
+            "createdAt": "2026-07-31T16:02:19.114Z",
+            "file": {
+              "id": "2e3d4c5b-6a78-4899-8011-bbccddeeff00",
+              "originalName": "cni-recto-net.jpg",
+              "mimeType": "image/jpeg",
+              "size": 934112,
+              "visibility": "sensitive"
+            }
+          },
+          {
+            "id": "8b9c0d1e-2f3a-4b4c-8d5e-6f7a8b9c0d1e",
+            "type": "id_card",
+            "status": "rejected",
+            "version": 1,
+            "rejectionReason": "Document illisible : la photo est floue, reprenez le recto en pleine lumière.",
+            "reviewedAt": "2026-07-31T15:40:12.905Z",
+            "createdAt": "2026-07-31T11:05:33.208Z",
+            "file": {
+              "id": "1f2e3d4c-5b6a-4788-9900-aabbccddeeff",
+              "originalName": "cni-recto.jpg",
+              "mimeType": "image/jpeg",
+              "size": 812304,
+              "visibility": "sensitive"
+            }
+          }
+        ],
+        "current": [
+          {
+            "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e2f",
+            "type": "id_card",
+            "status": "approved",
+            "version": 2,
+            "rejectionReason": null,
+            "reviewedAt": "2026-08-01T09:14:27.640Z",
+            "createdAt": "2026-07-31T16:02:19.114Z",
+            "file": {
+              "id": "2e3d4c5b-6a78-4899-8011-bbccddeeff00",
+              "originalName": "cni-recto-net.jpg",
+              "mimeType": "image/jpeg",
+              "size": 934112,
+              "visibility": "sensitive"
+            }
+          }
+        ]
+      }
+    }
+  },
+
+  "fileUploaded": {
+    "_note": "Étape 1 — POST /files/upload (multipart, champ « file »). Retenir `data.id` pour l'étape 2. La visibilité sera de toute façon forcée à `sensitive` au rattachement.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Fichier enregistré",
+      "data": {
+        "id": "2e3d4c5b-6a78-4899-8011-bbccddeeff00",
+        "originalName": "cni-recto-net.jpg",
+        "mimeType": "image/jpeg",
+        "size": 934112,
+        "visibility": "sensitive",
+        "createdAt": "2026-07-31T16:01:58.330Z"
+      }
+    }
+  },
+
+  "attached": {
+    "_note": "Étape 2 — le rattachement crée une VERSION, il n'écrase rien.",
+    "status": 201,
+    "body": {
+      "success": true,
+      "message": "Justificatif transmis",
+      "data": {
+        "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e2f",
+        "type": "id_card",
+        "status": "pending",
+        "version": 2,
+        "rejectionReason": null,
+        "reviewedAt": null,
+        "createdAt": "2026-07-31T16:02:19.114Z",
+        "file": {
+          "id": "2e3d4c5b-6a78-4899-8011-bbccddeeff00",
+          "originalName": "cni-recto-net.jpg",
+          "mimeType": "image/jpeg",
+          "size": 934112,
+          "visibility": "sensitive"
+        }
+      }
+    }
+  },
+
+  "alreadyApproved": {
+    "_note": "Un document approuvé ne se remplace pas : griser l'action de redépôt sur les lignes `approved`.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Votre justificatif « id_card » est déjà validé",
+      "errors": [],
+      "meta": { "correlationId": "88ff0011-2233-433a-8556-778899aabef4" }
+    }
+  },
+
+  "typeMissing": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Le type de document est obligatoire",
+      "errors": [
+        {
+          "field": "type",
+          "code": "too_small",
+          "message": "Le type de document est obligatoire"
+        }
+      ],
+      "meta": { "correlationId": "99001122-3344-444b-8667-8899aabbcf05" }
+    }
+  },
+
+  "fileNotFound": {
+    "_note": "Le fileId n'appartient pas au compte connecté ou a été désactivé : recommencer l'étape 1.",
+    "status": 404,
+    "body": {
+      "success": false,
+      "message": "Fichier introuvable ou ne vous appartenant pas",
+      "errors": [],
+      "meta": { "correlationId": "aa112233-4455-455c-8778-99aabbccd016" }
+    }
+  }
+}

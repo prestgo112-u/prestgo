@@ -1,0 +1,152 @@
+{
+  "_source": "GET /categories, GET /zones, GET /zones/nearby — public-catalog.controller.ts:37, public-zones.controller.ts:21 et 39",
+  "_note": "Les trois routes sont **non paginées** : `data` est un tableau nu, sans `meta`. Le catalogue et les zones sont quasi statiques — ils sont mis en cache 24 h.",
+
+  "categories": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "cat-11111111-1111-4111-8111-111111111111",
+          "name": "Plomberie",
+          "slug": "plomberie",
+          "description": "Fuites, sanitaires, canalisations",
+          "displayOrder": 1,
+          "active": true,
+          "serviceTypes": [
+            {
+              "id": "st-21111111-1111-4111-8111-111111111111",
+              "name": "Réparation de fuite",
+              "slug": "reparation-de-fuite",
+              "description": "Diagnostic et réparation d'une fuite d'eau"
+            },
+            {
+              "id": "st-21111111-1111-4111-8111-222222222222",
+              "name": "Installation sanitaire",
+              "slug": "installation-sanitaire",
+              "description": null
+            }
+          ]
+        },
+        {
+          "id": "cat-11111111-1111-4111-8111-222222222222",
+          "name": "Électricité",
+          "slug": "electricite",
+          "description": null,
+          "displayOrder": 2,
+          "active": true,
+          "serviceTypes": [
+            {
+              "id": "st-21111111-1111-4111-8111-333333333333",
+              "name": "Dépannage électrique",
+              "slug": "depannage-electrique",
+              "description": null
+            }
+          ]
+        },
+        {
+          "_note": "Catégorie sans type actif : elle ne doit proposer aucun filtre de second niveau.",
+          "id": "cat-11111111-1111-4111-8111-333333333333",
+          "name": "Jardinage",
+          "slug": "jardinage",
+          "description": null,
+          "displayOrder": 3,
+          "active": true,
+          "serviceTypes": []
+        }
+      ]
+    }
+  },
+
+  "zones": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "zone-31111111-1111-4111-8111-111111111111",
+          "name": "Cocody",
+          "latitude": 5.35,
+          "longitude": -3.98,
+          "radiusKm": 5,
+          "city": {
+            "id": "city-41111111-1111-4111-8111-111111111111",
+            "name": "Abidjan",
+            "slug": "abidjan"
+          }
+        },
+        {
+          "id": "zone-31111111-1111-4111-8111-222222222222",
+          "name": "Plateau",
+          "latitude": 5.32,
+          "longitude": -4.02,
+          "radiusKm": 4,
+          "city": {
+            "id": "city-41111111-1111-4111-8111-111111111111",
+            "name": "Abidjan",
+            "slug": "abidjan"
+          }
+        },
+        {
+          "_note": "Zone sans centre renseigné : elle ne peut ni être triée par distance ni couvrir une adresse.",
+          "id": "zone-31111111-1111-4111-8111-333333333333",
+          "name": "Yopougon",
+          "latitude": null,
+          "longitude": null,
+          "radiusKm": null,
+          "city": {
+            "id": "city-41111111-1111-4111-8111-111111111111",
+            "name": "Abidjan",
+            "slug": "abidjan"
+          }
+        }
+      ]
+    }
+  },
+
+  "nearby": {
+    "_note": "Même forme que `/zones`, augmentée de `distanceKm`, triée de la plus proche à la plus lointaine.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "zone-31111111-1111-4111-8111-111111111111",
+          "name": "Cocody",
+          "latitude": 5.35,
+          "longitude": -3.98,
+          "radiusKm": 5,
+          "distanceKm": 0.42,
+          "city": {
+            "id": "city-41111111-1111-4111-8111-111111111111",
+            "name": "Abidjan",
+            "slug": "abidjan"
+          }
+        },
+        {
+          "id": "zone-31111111-1111-4111-8111-222222222222",
+          "name": "Plateau",
+          "latitude": 5.32,
+          "longitude": -4.02,
+          "radiusKm": 4,
+          "distanceKm": 5.81,
+          "city": {
+            "id": "city-41111111-1111-4111-8111-111111111111",
+            "name": "Abidjan",
+            "slug": "abidjan"
+          }
+        }
+      ]
+    }
+  },
+
+  "nearbyEmpty": {
+    "_note": "Aucune zone dans le rayon : c'est un succès, pas une erreur. L'écran propose d'élargir.",
+    "status": 200,
+    "body": { "success": true, "message": "OK", "data": [] }
+  }
+}

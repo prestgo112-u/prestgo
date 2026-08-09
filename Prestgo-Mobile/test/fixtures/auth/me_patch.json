@@ -1,0 +1,113 @@
+{
+  "_source": "PATCH /me — me.controller.ts:77, me.service.ts:80",
+  "_note": "⚠️ `data` est le profil COMPLET augmenté de `pendingVerifications`. Changer un contact le repasse en non vérifié et déclenche un code : l'écran doit enchaîner sur la vérification. Le canal renvoyé est `sms` (pas `phone`) — le mapping vers `phone_verification` est à la charge de l'application.",
+
+  "nameOnly": {
+    "_note": "Aucun contact modifié : `pendingVerifications` est vide, on reste sur le profil.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Profil mis à jour",
+      "data": {
+        "id": "c4f8a2e1-9d3b-4e5a-8f6c-1a2b3c4d5e6f",
+        "firstName": "Awa",
+        "lastName": "Koné-Diabaté",
+        "email": "client.demo@prestgo.test",
+        "phone": "+2250700000001",
+        "status": "active",
+        "emailVerified": true,
+        "phoneVerified": true,
+        "roles": [],
+        "hasClientProfile": true,
+        "hasProviderProfile": false,
+        "providerId": null,
+        "providerValidationStatus": null,
+        "createdAt": "2026-06-02T08:30:00.000Z",
+        "pendingVerifications": []
+      }
+    }
+  },
+
+  "phoneChanged": {
+    "_note": "`phoneVerified` retombe à false et un code part sur le NOUVEAU numéro. Canal `sms`.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Profil mis à jour. Un code de vérification vous a été envoyé.",
+      "data": {
+        "id": "c4f8a2e1-9d3b-4e5a-8f6c-1a2b3c4d5e6f",
+        "firstName": "Awa",
+        "lastName": "Koné",
+        "email": "client.demo@prestgo.test",
+        "phone": "+2250700000077",
+        "status": "active",
+        "emailVerified": true,
+        "phoneVerified": false,
+        "roles": [],
+        "hasClientProfile": true,
+        "hasProviderProfile": false,
+        "providerId": null,
+        "providerValidationStatus": null,
+        "createdAt": "2026-06-02T08:30:00.000Z",
+        "pendingVerifications": [
+          { "channel": "sms", "target": "+2250700000077" }
+        ]
+      }
+    }
+  },
+
+  "bothChanged": {
+    "_note": "Email ET téléphone modifiés : deux vérifications à enchaîner, l'email d'abord (ordre du service).",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Profil mis à jour. Un code de vérification vous a été envoyé.",
+      "data": {
+        "id": "c4f8a2e1-9d3b-4e5a-8f6c-1a2b3c4d5e6f",
+        "firstName": "Awa",
+        "lastName": "Koné",
+        "email": "awa.kone@prestgo.test",
+        "phone": "+2250700000077",
+        "status": "active",
+        "emailVerified": false,
+        "phoneVerified": false,
+        "roles": [],
+        "hasClientProfile": true,
+        "hasProviderProfile": false,
+        "providerId": null,
+        "providerValidationStatus": null,
+        "createdAt": "2026-06-02T08:30:00.000Z",
+        "pendingVerifications": [
+          { "channel": "email", "target": "awa.kone@prestgo.test" },
+          { "channel": "sms", "target": "+2250700000077" }
+        ]
+      }
+    }
+  },
+
+  "contactTaken": {
+    "status": 409,
+    "body": {
+      "success": false,
+      "message": "Cet email ou ce numéro est déjà utilisé",
+      "errors": [],
+      "meta": { "correlationId": "01234567-89ab-4012-99aa-bbccddeeff00" }
+    }
+  },
+
+  "invalidPhone": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Numéro de téléphone invalide",
+      "errors": [
+        {
+          "field": "phone",
+          "code": "validation_error",
+          "message": "Numéro de téléphone invalide"
+        }
+      ],
+      "meta": { "correlationId": "12345678-9abc-4123-aabb-ccddeeff0011" }
+    }
+  }
+}

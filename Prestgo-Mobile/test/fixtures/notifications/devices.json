@@ -1,0 +1,77 @@
+{
+  "_source": "POST /me/devices, DELETE /me/devices/:token, GET /me/devices — §5.3 du cahier des charges.",
+  "_note": "Enregistrement : 200 (PAS 201), upsert sur le jeton, 30/jour. LE JETON N'EST JAMAIS RENVOYÉ (secret d'envoi). Désenregistrement : jeton ENCODÉ dans l'URL, idempotent — { unregistered: false } pour un jeton absent ou à autrui, jamais d'erreur.",
+
+  "registered": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Appareil enregistré",
+      "data": {
+        "id": "d-1",
+        "platform": "android",
+        "active": true,
+        "lastSeenAt": "2026-07-30T10:00:00.000Z"
+      }
+    }
+  },
+
+  "invalidToken": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Jeton d'appareil invalide",
+      "meta": { "correlationId": "corr-us7-400-token" }
+    }
+  },
+
+  "rateLimited": {
+    "status": 429,
+    "body": {
+      "success": false,
+      "message": "Trop de requêtes. Veuillez réessayer plus tard.",
+      "meta": { "correlationId": "corr-us7-429-devices" }
+    }
+  },
+
+  "unregistered": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": { "unregistered": true }
+    }
+  },
+
+  "unregisteredForeign": {
+    "_note": "Jeton absent ou appartenant à un autre compte : succès quand même.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": { "unregistered": false }
+    }
+  },
+
+  "list": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "d-1",
+          "platform": "android",
+          "active": true,
+          "lastSeenAt": "2026-07-30T10:00:00.000Z"
+        },
+        {
+          "id": "d-2",
+          "platform": "ios",
+          "active": false,
+          "lastSeenAt": "2026-05-14T18:22:41.007Z"
+        }
+      ]
+    }
+  }
+}

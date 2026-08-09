@@ -1,0 +1,42 @@
+{
+  "_source": "GET /missions/:id/thread — §3.11 du cahier des charges. Utile en arrivant du détail d'une mission sans avoir chargé /me/threads.",
+
+  "open": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "e6499753-89c6-4a9f-bdc9-b3ff4508be47",
+        "missionId": "b86332d9-14a0-4ec8-b5d0-d0158ae1824d",
+        "status": "open",
+        "messageCount": 47,
+        "createdAt": "2026-07-19T11:16:12.592Z"
+      }
+    }
+  },
+
+  "closed": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "f7b00864-97d7-4b0a-9cd0-c4005619cf58",
+        "missionId": "c9744fd0-25c2-4e0a-b6e2-e2169cf2935e",
+        "status": "closed",
+        "messageCount": 12,
+        "createdAt": "2026-07-08T16:41:02.114Z"
+      }
+    }
+  },
+
+  "notFound": {
+    "status": 404,
+    "body": {
+      "success": false,
+      "message": "Conversation ou mission introuvable",
+      "meta": { "correlationId": "corr-us6-404-thread" }
+    }
+  }
+}

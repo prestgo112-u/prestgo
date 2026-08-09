@@ -1,0 +1,148 @@
+{
+  "_source": "GET /zones (route publique), GET/PUT /providers/me/zones — §2.2 P5 du cahier des charges (self-dto.ts:119-125).",
+  "_note": "PUT, pas POST : le tableau envoyé REMPLACE intégralement la liste. Contrôle atomique : une seule zone invalide et RIEN n'est écrit. La liste vide est acceptée (« je ne couvre plus aucune zone ») — d'où la confirmation explicite à l'écran.",
+
+  "catalog": {
+    "_note": "GET /zones — zones actives, non paginées, pour la liste à cocher.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "fddb1349-5f23-4307-9560-710c6220c049",
+          "name": "Cocody",
+          "latitude": 5.359952,
+          "longitude": -3.996221,
+          "radiusKm": 8,
+          "active": true,
+          "city": { "id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d", "name": "Abidjan" }
+        },
+        {
+          "id": "a3c81b52-7e94-4d16-b820-364f5a9c7e10",
+          "name": "Yopougon",
+          "latitude": 5.335446,
+          "longitude": -4.088707,
+          "radiusKm": 10,
+          "active": true,
+          "city": { "id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d", "name": "Abidjan" }
+        },
+        {
+          "id": "b4d92c63-8fa5-4e27-9c31-475a6b8d9f21",
+          "name": "Marcory",
+          "latitude": 5.301205,
+          "longitude": -3.982224,
+          "radiusKm": 6,
+          "active": true,
+          "city": { "id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d", "name": "Abidjan" }
+        }
+      ]
+    }
+  },
+
+  "mine": {
+    "_note": "GET /providers/me/zones — pré-cochage de l'écran.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "fddb1349-5f23-4307-9560-710c6220c049",
+          "name": "Cocody",
+          "latitude": 5.359952,
+          "longitude": -3.996221,
+          "radiusKm": 8,
+          "active": true,
+          "city": { "id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d", "name": "Abidjan" }
+        },
+        {
+          "id": "b4d92c63-8fa5-4e27-9c31-475a6b8d9f21",
+          "name": "Marcory",
+          "latitude": 5.301205,
+          "longitude": -3.982224,
+          "radiusKm": 6,
+          "active": true,
+          "city": { "id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d", "name": "Abidjan" }
+        }
+      ]
+    }
+  },
+
+  "mineEmpty": {
+    "status": 200,
+    "body": { "success": true, "message": "OK", "data": [] }
+  },
+
+  "replaced": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Zones d'intervention mises à jour",
+      "data": [
+        {
+          "id": "fddb1349-5f23-4307-9560-710c6220c049",
+          "name": "Cocody",
+          "latitude": 5.359952,
+          "longitude": -3.996221,
+          "radiusKm": 8,
+          "active": true,
+          "city": { "id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d", "name": "Abidjan" }
+        }
+      ]
+    }
+  },
+
+  "replacedEmpty": {
+    "_note": "Liste vide acceptée : le prestataire disparaît de la recherche.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Zones d'intervention mises à jour",
+      "data": []
+    }
+  },
+
+  "unknownZone": {
+    "_note": "Contrôle ATOMIQUE : le message liste les zones invalides, rien n'est écrit. Recharger GET /zones et réafficher.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Zone inconnue ou inactive : 9f8e7d6c-5b4a-4392-8170-6f5e4d3c2b1a, 8e7d6c5b-4a39-4281-8069-5e4d3c2b1a09",
+      "errors": [],
+      "meta": { "correlationId": "229900aa-bbcc-4dd4-8ff0-112233445598" }
+    }
+  },
+
+  "tooMany": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Vous ne pouvez pas couvrir plus de 15 zones",
+      "errors": [
+        {
+          "field": "zoneIds",
+          "code": "too_big",
+          "message": "Pas plus de 15 zones"
+        }
+      ],
+      "meta": { "correlationId": "33aa00bb-ccdd-4ee5-8001-2233445566a9" }
+    }
+  },
+
+  "duplicateZone": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "La même zone est indiquée plusieurs fois",
+      "errors": [
+        {
+          "field": "zoneIds",
+          "code": "custom",
+          "message": "La même zone est indiquée plusieurs fois"
+        }
+      ],
+      "meta": { "correlationId": "44bb00cc-ddee-4ff6-8112-3344556677ba" }
+    }
+  }
+}

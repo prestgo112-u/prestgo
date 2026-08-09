@@ -1,0 +1,80 @@
+{
+  "_source": "POST /missions/:id/cancel — §3.7 du cahier des charges (mission-lifecycle.service.ts).",
+  "_note": "`late` est CALCULÉ, jamais bloquant : une annulation à moins de `missionCancellationNoticeHours` de l'horaire est acceptée et marquée tardive. L'UI avertit AVANT l'appel ; le message serveur, affiché après coup, reste l'autorité.",
+
+  "cancelled": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Mission annulée",
+      "data": {
+        "missionId": "a75221c8-03a0-4dc7-a4c0-c0047ad0713c",
+        "previousStatus": "pending_provider",
+        "status": "cancelled",
+        "late": false
+      }
+    }
+  },
+
+  "cancelledLate": {
+    "_note": "Capture réelle : annulation acceptée ET marquée tardive.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Mission annulée. L'annulation est enregistrée comme tardive.",
+      "data": {
+        "missionId": "b86332d9-14a0-4ec8-b5d0-d0158ae1824d",
+        "previousStatus": "confirmed",
+        "status": "cancelled",
+        "late": true
+      }
+    }
+  },
+
+  "missingReason": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Un motif d'annulation est obligatoire",
+      "errors": [
+        {
+          "field": "reason",
+          "code": "too_small",
+          "message": "Un motif est obligatoire (au moins 3 caractères)"
+        }
+      ],
+      "meta": { "correlationId": "ee550066-7788-499a-8bbc-ddeeff012345" }
+    }
+  },
+
+  "invalidTransition": {
+    "_note": "Le statut a changé entre l'affichage et l'envoi : rafraîchir le détail.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Transition de mission invalide : completed → cancelled",
+      "errors": [],
+      "meta": { "correlationId": "ff660077-8899-4aab-8ccd-eeff01234567" }
+    }
+  },
+
+  "notParty": {
+    "status": 403,
+    "body": {
+      "success": false,
+      "message": "Vous n'êtes pas partie à cette mission",
+      "errors": [],
+      "meta": { "correlationId": "00770088-99aa-4bbc-8dde-ff0123456789" }
+    }
+  },
+
+  "notFound": {
+    "status": 404,
+    "body": {
+      "success": false,
+      "message": "Mission introuvable",
+      "errors": [],
+      "meta": { "correlationId": "118800aa-aabb-4ccd-8eef-f01234567890" }
+    }
+  }
+}

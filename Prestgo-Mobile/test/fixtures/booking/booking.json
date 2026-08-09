@@ -1,0 +1,236 @@
+{
+  "_source": "POST /missions — mission-actions.controller.ts:103, mission-booking.service.ts, common/idempotency/idempotency.service.ts",
+  "_note": "Le cœur de cette phase. Trois issues à ne surtout pas confondre :\n  • 201 « Réservation créée »            → succès ;\n  • 200 « Réservation déjà enregistrée » → succès AUSSI — le premier appel était passé ;\n  • 409 « déjà en cours de traitement »  → ni succès ni erreur : attendre et réessayer.\nUn 400 métier, lui, libère la clé côté service : l'utilisateur corrige et repart avec une clé NEUVE, puisque le contenu a changé.",
+
+  "created": {
+    "status": 201,
+    "body": {
+      "success": true,
+      "message": "Réservation créée",
+      "data": {
+        "id": "m-c1111111-1111-4111-8111-111111111111",
+        "status": "pending_provider",
+        "scheduledAt": "2026-08-03T09:00:00.000Z",
+        "instructions": "Portail bleu, sonner deux fois.",
+        "quotedAmount": 6500,
+        "createdAt": "2026-08-01T08:12:00.000Z",
+        "client": {
+          "id": "c4f8a2e1-9d3b-4e5a-8f6c-1a2b3c4d5e6f",
+          "firstName": "Awa",
+          "lastName": "Koné"
+        },
+        "provider": {
+          "id": "p-4c8e1a05-7b3d-4f62-9e08-1a5c7d9e0b3f",
+          "publicName": "Adjoua Plomberie",
+          "score": 4.8,
+          "reviewsCount": 12,
+          "avatarFileId": "file-51111111-1111-4111-8111-111111111111"
+        },
+        "pack": {
+          "id": "pack-71111111-1111-4111-8111-111111111111",
+          "title": "Diagnostic et réparation simple",
+          "price": 5000,
+          "durationMinutes": 45,
+          "providerService": {
+            "title": "Plomberie générale",
+            "serviceType": { "name": "Réparation de fuite" }
+          }
+        },
+        "options": [
+          {
+            "optionId": "opt-81111111-1111-4111-8111-111111111111",
+            "title": "Remplacement du joint",
+            "price": 1500
+          }
+        ],
+        "address": {
+          "id": "addr-b1111111-1111-4111-8111-111111111111",
+          "label": "Domicile",
+          "city": "Abidjan",
+          "commune": "Cocody",
+          "details": "Rue des Jardins, villa 12",
+          "latitude": 5.35,
+          "longitude": -3.98
+        },
+        "thread": { "id": "th-d1111111-1111-4111-8111-111111111111", "status": "open" },
+        "cancellation": null,
+        "reschedules": [],
+        "reviews": []
+      }
+    }
+  },
+
+  "alreadyRecorded": {
+    "_note": "Rejeu d'une clé TERMINÉE : la mission d'origine est renvoyée, rien n'est recréé. À traiter comme un succès (FR-034). Noter le 200 au lieu du 201 — mais l'application ne doit pas s'y fier : c'est le message qui porte le sens, et surtout le fait qu'une mission soit renvoyée.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Réservation déjà enregistrée",
+      "data": {
+        "id": "m-c1111111-1111-4111-8111-111111111111",
+        "status": "pending_provider",
+        "scheduledAt": "2026-08-03T09:00:00.000Z",
+        "instructions": "Portail bleu, sonner deux fois.",
+        "quotedAmount": 6500,
+        "createdAt": "2026-08-01T08:12:00.000Z",
+        "client": {
+          "id": "c4f8a2e1-9d3b-4e5a-8f6c-1a2b3c4d5e6f",
+          "firstName": "Awa",
+          "lastName": "Koné"
+        },
+        "provider": {
+          "id": "p-4c8e1a05-7b3d-4f62-9e08-1a5c7d9e0b3f",
+          "publicName": "Adjoua Plomberie",
+          "score": 4.8,
+          "reviewsCount": 12,
+          "avatarFileId": "file-51111111-1111-4111-8111-111111111111"
+        },
+        "pack": {
+          "id": "pack-71111111-1111-4111-8111-111111111111",
+          "title": "Diagnostic et réparation simple",
+          "price": 5000,
+          "durationMinutes": 45,
+          "providerService": {
+            "title": "Plomberie générale",
+            "serviceType": { "name": "Réparation de fuite" }
+          }
+        },
+        "options": [
+          {
+            "optionId": "opt-81111111-1111-4111-8111-111111111111",
+            "title": "Remplacement du joint",
+            "price": 1500
+          }
+        ],
+        "address": {
+          "id": "addr-b1111111-1111-4111-8111-111111111111",
+          "label": "Domicile",
+          "city": "Abidjan",
+          "commune": "Cocody",
+          "details": "Rue des Jardins, villa 12",
+          "latitude": 5.35,
+          "longitude": -3.98
+        },
+        "thread": { "id": "th-d1111111-1111-4111-8111-111111111111", "status": "open" },
+        "cancellation": null,
+        "reschedules": [],
+        "reviews": []
+      }
+    }
+  },
+
+  "inFlight": {
+    "_note": "Rejeu d'une clé ENCORE EN VOL. ⚠️ Ne jamais présenter comme une erreur : l'indicateur de chargement reste affiché, on attend 2 s et on réessaie (2 fois au plus), puis on recharge la liste des missions.",
+    "status": 409,
+    "body": {
+      "success": false,
+      "message": "Une requête identique est déjà en cours de traitement. Réessayez dans quelques instants.",
+      "errors": [],
+      "meta": { "correlationId": "44bb55cc-66dd-47ee-88ff-99aabbccddee" }
+    }
+  },
+
+  "leadTimeTooShort": {
+    "_note": "Le nombre vient du réglage `mission.min_lead_time_minutes` lu au démarrage. L'application devance ce refus (scénario 2.6) — mais le message du service, s'il arrive, est affiché tel quel.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Une réservation doit être posée au moins 60 minutes à l'avance",
+      "errors": [],
+      "meta": { "correlationId": "55cc66dd-77ee-48ff-8900-aabbccddeeff" }
+    }
+  },
+
+  "addressOutOfZone": {
+    "_note": "Scénario 2.8 : l'écran ramène à l'étape adresse et affiche les zones couvertes du prestataire, qu'il a déjà en mémoire depuis la fiche publique.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Cette adresse n'est pas dans la zone d'intervention du prestataire",
+      "errors": [],
+      "meta": { "correlationId": "66dd77ee-88ff-4900-8a11-bbccddeeff00" }
+    }
+  },
+
+  "addressNotGeolocated": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Cette adresse n'est pas géolocalisée : elle ne peut pas servir de lieu d'intervention",
+      "errors": [],
+      "meta": { "correlationId": "77ee88ff-9900-4a11-8b22-ccddeeff0011" }
+    }
+  },
+
+  "slotNotAvailable": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Le prestataire n'est pas disponible sur ce créneau",
+      "errors": [],
+      "meta": { "correlationId": "88ff9900-aa11-4b22-8c33-ddeeff001122" }
+    }
+  },
+
+  "slotTaken": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Ce créneau est déjà réservé chez ce prestataire",
+      "errors": [],
+      "meta": { "correlationId": "9900aa11-bb22-4c33-8d44-eeff00112233" }
+    }
+  },
+
+  "providerAbsent": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Le prestataire est absent à cette date",
+      "errors": [],
+      "meta": { "correlationId": "aa11bb22-cc33-4d44-8e55-ff0011223344" }
+    }
+  },
+
+  "unknownOption": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Option inconnue pour cette formule : opt-81111111-1111-4111-8111-999999999999",
+      "errors": [],
+      "meta": { "correlationId": "bb22cc33-dd44-4e55-8f66-001122334455" }
+    }
+  },
+
+  "duplicateBooking": {
+    "_note": "Anti-doublon **métier** du service (même client, même prestataire, même créneau) — à ne pas confondre avec la protection par clé d'idempotence, qui est technique.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Vous avez déjà une réservation en cours avec ce prestataire sur ce créneau",
+      "errors": [],
+      "meta": { "correlationId": "cc33dd44-ee55-4f66-8077-112233445566" }
+    }
+  },
+
+  "packNotFound": {
+    "status": 404,
+    "body": {
+      "success": false,
+      "message": "Formule introuvable, inactive, ou ne correspondant pas à ce prestataire",
+      "errors": [],
+      "meta": { "correlationId": "dd44ee55-ff66-4077-8188-223344556677" }
+    }
+  },
+
+  "rateLimited": {
+    "_note": "10 réservations par heure. Aucun rejeu : message d'attente et bouton fermé.",
+    "status": 429,
+    "body": {
+      "success": false,
+      "message": "Trop de tentatives en peu de temps. Merci de réessayer dans une minute.",
+      "errors": [],
+      "meta": { "correlationId": "ee55ff66-0077-4188-8299-334455667788" }
+    }
+  }
+}

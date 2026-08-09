@@ -1,0 +1,59 @@
+{
+  "_source": "GET /me/threads — §3.11 du cahier des charges, capture réelle du 2026-07-19 complétée d'un fil clôturé (scénario 6.4).",
+  "_note": "`counterpartName` est déjà résolu du bon côté par le service : la même route sert au client et au prestataire, sans logique conditionnelle. `unreadCount` exclut mes propres messages.",
+
+  "firstPage": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "e6499753-89c6-4a9f-bdc9-b3ff4508be47",
+          "missionId": "b86332d9-14a0-4ec8-b5d0-d0158ae1824d",
+          "missionStatus": "confirmed",
+          "scheduledAt": "2026-08-03T14:00:00.000Z",
+          "status": "open",
+          "counterpartName": "Kofi Plomberie",
+          "counterpartAvatarFileId": null,
+          "lastMessage": {
+            "id": "b4169c91-5a02-46da-9cc1-4a1a80e00c53",
+            "message": "Bonjour, à quelle heure passez-vous ?",
+            "senderId": "71e88780-d204-4145-b06d-b9e3acdbb365",
+            "createdAt": "2026-07-19T11:16:12.592Z"
+          },
+          "unreadCount": 1,
+          "createdAt": "2026-07-19T11:16:12.592Z"
+        },
+        {
+          "id": "f7b00864-97d7-4b0a-9cd0-c4005619cf58",
+          "missionId": "c9744fd0-25c2-4e0a-b6e2-e2169cf2935e",
+          "missionStatus": "closed",
+          "scheduledAt": "2026-07-10T09:00:00.000Z",
+          "status": "closed",
+          "counterpartName": "Kofi Plomberie",
+          "counterpartAvatarFileId": null,
+          "lastMessage": {
+            "id": "0d7a5df4-6c1b-49af-92e6-3a67e04c2b18",
+            "message": "Merci, bonne journée !",
+            "senderId": "c4f8a2e1-9d3b-4e5a-8f6c-1a2b3c4d5e6f",
+            "createdAt": "2026-07-12T11:10:44.031Z"
+          },
+          "unreadCount": 0,
+          "createdAt": "2026-07-08T16:41:02.114Z"
+        }
+      ],
+      "meta": { "page": 1, "limit": 20, "total": 2 }
+    }
+  },
+
+  "empty": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [],
+      "meta": { "page": 1, "limit": 20, "total": 0 }
+    }
+  }
+}

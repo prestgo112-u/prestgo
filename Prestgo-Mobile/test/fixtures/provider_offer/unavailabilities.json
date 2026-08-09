@@ -1,0 +1,92 @@
+{
+  "_source": "POST/DELETE /providers/me/unavailabilities (opérations 81, 82) et GET /providers/{id}/unavailabilities (opération 29) — FR-056.",
+  "_note": "Les bornes sont de vraies dates ISO/UTC. Les deux contrôles locaux (fin après début, chevauchement) reproduisent les 400 du service. L'appartenance est vérifiée à la suppression : l'absence d'un autre répond 404.",
+
+  "list": {
+    "_note": "Relecture de MES absences par la route publique — l'id est celui de mon profil prestataire.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "d4e5f6a7-b8c9-4d0e-8f1a-3b4c5d6e7f8a",
+          "startAt": "2026-08-10T00:00:00.000Z",
+          "endAt": "2026-08-17T00:00:00.000Z",
+          "reason": "Congés annuels"
+        },
+        {
+          "id": "e5f6a7b8-c9d0-4e1f-8a2b-4c5d6e7f8a9b",
+          "startAt": "2026-09-01T08:00:00.000Z",
+          "endAt": "2026-09-01T18:00:00.000Z",
+          "reason": null
+        }
+      ]
+    }
+  },
+
+  "listEmpty": {
+    "status": 200,
+    "body": { "success": true, "message": "OK", "data": [] }
+  },
+
+  "created": {
+    "status": 201,
+    "body": {
+      "success": true,
+      "message": "Absence enregistrée",
+      "data": {
+        "id": "f6a7b8c9-d0e1-4f2a-8b3c-5d6e7f8a9b0c",
+        "startAt": "2026-10-05T00:00:00.000Z",
+        "endAt": "2026-10-07T00:00:00.000Z",
+        "reason": "Formation"
+      }
+    }
+  },
+
+  "endBeforeStart": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "La date de fin doit être postérieure à la date de début",
+      "errors": [
+        {
+          "field": "endAt",
+          "code": "invalid_range",
+          "message": "La date de fin doit être postérieure à la date de début"
+        }
+      ],
+      "meta": { "correlationId": "55cc2433-eeff-4007-8223-445566778acb" }
+    }
+  },
+
+  "overlap": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Cette absence chevauche une absence déjà enregistrée",
+      "errors": [],
+      "meta": { "correlationId": "66dd3544-ff00-4118-8334-556677889bdc" }
+    }
+  },
+
+  "deleted": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Absence supprimée",
+      "data": null
+    }
+  },
+
+  "notFound": {
+    "_note": "Appartenance vérifiée : l'absence d'un autre prestataire répond 404.",
+    "status": 404,
+    "body": {
+      "success": false,
+      "message": "Absence introuvable",
+      "errors": [],
+      "meta": { "correlationId": "77ee4655-0011-4229-8445-66778899aced" }
+    }
+  }
+}

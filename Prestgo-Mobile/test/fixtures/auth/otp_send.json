@@ -1,0 +1,56 @@
+{
+  "_source": "POST /auth/otp/send — auth.controller.ts:98, account.service.ts:259",
+  "_note": "La réponse est identique que le destinataire corresponde à un compte ou non : cette route ne dit jamais qui est inscrit. `devCode` n'apparaît que si AUTH_EXPOSE_DEV_CODES=true.",
+
+  "sent": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Un code de vérification a été envoyé.",
+      "data": {
+        "message": "Un code de vérification a été envoyé.",
+        "expiresInMinutes": 10
+      }
+    }
+  },
+
+  "sentWithDevCode": {
+    "_note": "Profil `dev` uniquement — c'est ce qui rend le parcours testable sans SMS.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Un code de vérification a été envoyé.",
+      "data": {
+        "message": "Un code de vérification a été envoyé.",
+        "expiresInMinutes": 10,
+        "devCode": "418902"
+      }
+    }
+  },
+
+  "unknownPurpose": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Motif inconnu (phone_verification, email_verification, login)",
+      "errors": [
+        {
+          "field": "purpose",
+          "code": "validation_error",
+          "message": "Motif inconnu (phone_verification, email_verification, login)"
+        }
+      ],
+      "meta": { "correlationId": "b2c3d4e5-f607-4819-aabb-ccddeeff0011" }
+    }
+  },
+
+  "rateLimited": {
+    "status": 429,
+    "body": {
+      "success": false,
+      "message": "Trop de tentatives en peu de temps. Merci de réessayer dans une minute.",
+      "errors": [],
+      "meta": { "correlationId": "c3d4e5f6-0718-492a-bbcc-ddeeff001122" }
+    }
+  }
+}

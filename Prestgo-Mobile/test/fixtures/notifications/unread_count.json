@@ -1,0 +1,22 @@
+{
+  "_source": "GET /me/notifications/unread-count — §3.10 du cahier des charges. Appel léger, sans charger la liste.",
+  "_note": "À rafraîchir au démarrage, au retour au premier plan et à la réception d'un push (FR-082).",
+
+  "three": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": { "unread": 3 }
+    }
+  },
+
+  "zero": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": { "unread": 0 }
+    }
+  }
+}

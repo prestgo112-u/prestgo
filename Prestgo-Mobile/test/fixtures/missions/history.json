@@ -1,0 +1,111 @@
+{
+  "_source": "GET /missions/:id/history — §3.7 du cahier des charges. Mêmes 401/403/404 que le détail.",
+  "_note": "`statusHistory` alimente la frise ; l'entrée `newStatus == \"completed\"` sert aussi à calculer la fenêtre de dépôt d'avis (US9).",
+
+  "timeline": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "statusHistory": [
+          {
+            "id": "h-28d30b97-cf51-4d62-e709-1b2c3d4e5f60",
+            "oldStatus": null,
+            "newStatus": "pending_provider",
+            "reason": "Réservation créée par le client",
+            "createdAt": "2026-07-19T11:16:12.582Z"
+          },
+          {
+            "id": "h-39e41ca8-d062-4e73-f81a-2c3d4e5f6071",
+            "oldStatus": "pending_provider",
+            "newStatus": "confirmed",
+            "reason": "Demande acceptée par le prestataire",
+            "createdAt": "2026-07-19T15:42:07.910Z"
+          }
+        ],
+        "reschedules": [
+          {
+            "id": "r-17c2fa86-be40-4c51-d6f8-0a1b2c3d4e5f",
+            "oldScheduledAt": "2026-08-01T10:00:00.000Z",
+            "newScheduledAt": "2026-08-03T14:00:00.000Z",
+            "reason": "Je ne serai pas là samedi.",
+            "createdAt": "2026-07-25T08:30:00.000Z"
+          }
+        ]
+      }
+    }
+  },
+
+  "completedTimeline": {
+    "_note": "Mission arrivée à `completed` : la date d'entrée dans ce statut se lit ici.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "statusHistory": [
+          {
+            "id": "h-4af52db9-e173-4f84-092b-3d4e5f607182",
+            "oldStatus": null,
+            "newStatus": "pending_provider",
+            "reason": "Réservation créée par le client",
+            "createdAt": "2026-07-02T16:40:03.008Z"
+          },
+          {
+            "id": "h-5b063eca-f284-4095-1a3c-4e5f60718293",
+            "oldStatus": "pending_provider",
+            "newStatus": "confirmed",
+            "reason": "Demande acceptée par le prestataire",
+            "createdAt": "2026-07-03T09:11:26.554Z"
+          },
+          {
+            "id": "h-6c174fdb-0395-41a6-2b4d-5f6071829304",
+            "oldStatus": "confirmed",
+            "newStatus": "in_progress",
+            "reason": "Intervention démarrée",
+            "createdAt": "2026-07-12T10:03:40.220Z"
+          },
+          {
+            "id": "h-7d2850ec-14a6-42b7-3c5e-607182930415",
+            "oldStatus": "in_progress",
+            "newStatus": "completed",
+            "reason": "Intervention terminée",
+            "createdAt": "2026-07-12T11:07:02.876Z"
+          }
+        ],
+        "reschedules": []
+      }
+    }
+  },
+
+  "justCreated": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "statusHistory": [
+          {
+            "id": "h-8e3961fd-25b7-43c8-4d6f-718293041526",
+            "oldStatus": null,
+            "newStatus": "pending_provider",
+            "reason": "Réservation créée par le client",
+            "createdAt": "2026-07-30T08:05:44.120Z"
+          }
+        ],
+        "reschedules": []
+      }
+    }
+  },
+
+  "notParty": {
+    "status": 403,
+    "body": {
+      "success": false,
+      "message": "Vous n'êtes pas partie à cette mission",
+      "errors": [],
+      "meta": { "correlationId": "dd440055-6677-4889-8aab-ccddeeff0123" }
+    }
+  }
+}

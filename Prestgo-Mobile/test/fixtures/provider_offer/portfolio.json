@@ -1,0 +1,167 @@
+{
+  "_source": "GET/POST/PATCH/DELETE /providers/me/portfolio — §5.2 du cahier des charges, data-model §4.7.",
+  "_note": "20 réalisations au maximum, images uniquement. L'ajout force la visibilité du fichier à `public` ; le retrait la ramène à `restricted`. Le réordonnancement se fait élément par élément (PATCH displayOrder) — aucune route de lot. Le PATCH n'accepte AUCUN changement d'image.",
+
+  "list": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+          "title": "Rénovation salle de bain",
+          "description": "Remplacement complet de la robinetterie et du carrelage.",
+          "displayOrder": 0,
+          "createdAt": "2026-07-20T09:15:33.120Z",
+          "file": {
+            "id": "f1a2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b5c",
+            "originalName": "salle-de-bain.jpg",
+            "mimeType": "image/jpeg",
+            "size": 482113,
+            "visibility": "public"
+          }
+        },
+        {
+          "id": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+          "title": "Chauffe-eau neuf",
+          "description": null,
+          "displayOrder": 1,
+          "createdAt": "2026-07-22T14:02:08.744Z",
+          "file": {
+            "id": "a2b3c4d5-e6f7-4a8b-9c0d-1e2f3a4b5c6d",
+            "originalName": "chauffe-eau.webp",
+            "mimeType": "image/webp",
+            "size": 210554,
+            "visibility": "public"
+          }
+        }
+      ]
+    }
+  },
+
+  "created": {
+    "_note": "Le fichier rattaché est passé en visibilité `public` par le service — la réalisation est visible sur la fiche.",
+    "status": 201,
+    "body": {
+      "success": true,
+      "message": "Réalisation ajoutée",
+      "data": {
+        "id": "c3d4e5f6-a7b8-4c9d-8e0f-2a3b4c5d6e7f",
+        "title": "Débouchage cuisine",
+        "description": null,
+        "displayOrder": 2,
+        "createdAt": "2026-07-30T11:41:52.006Z",
+        "file": {
+          "id": "b3c4d5e6-f7a8-4b9c-8d0e-2f3a4b5c6d7e",
+          "originalName": "cuisine.png",
+          "mimeType": "image/png",
+          "size": 355871,
+          "visibility": "public"
+        }
+      }
+    }
+  },
+
+  "capReached": {
+    "_note": "21e réalisation : refus. L'écran désactive l'ajout à 20 avec le motif, ce 400 est le filet du service (scénario 8.3).",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Le portfolio est limité à 20 réalisations",
+      "errors": [],
+      "meta": { "correlationId": "22990100-bbcc-4dd4-8ff0-112233445598" }
+    }
+  },
+
+  "notImage": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Seules les images sont acceptées dans le portfolio",
+      "errors": [
+        {
+          "field": "fileId",
+          "code": "invalid_type",
+          "message": "Seules les images sont acceptées dans le portfolio"
+        }
+      ],
+      "meta": { "correlationId": "33aa0211-ccdd-4ee5-8001-2233445566a9" }
+    }
+  },
+
+  "updated": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Réalisation mise à jour",
+      "data": {
+        "id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+        "title": "Rénovation complète de salle de bain",
+        "description": "Remplacement complet de la robinetterie et du carrelage.",
+        "displayOrder": 0,
+        "createdAt": "2026-07-20T09:15:33.120Z",
+        "file": {
+          "id": "f1a2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b5c",
+          "originalName": "salle-de-bain.jpg",
+          "mimeType": "image/jpeg",
+          "size": 482113,
+          "visibility": "public"
+        }
+      }
+    }
+  },
+
+  "reordered": {
+    "_note": "Réordonnancement élément par élément : un PATCH par réalisation déplacée, displayOrder seul.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Réalisation mise à jour",
+      "data": {
+        "id": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+        "title": "Chauffe-eau neuf",
+        "description": null,
+        "displayOrder": 0,
+        "createdAt": "2026-07-22T14:02:08.744Z",
+        "file": {
+          "id": "a2b3c4d5-e6f7-4a8b-9c0d-1e2f3a4b5c6d",
+          "originalName": "chauffe-eau.webp",
+          "mimeType": "image/webp",
+          "size": 210554,
+          "visibility": "public"
+        }
+      }
+    }
+  },
+
+  "deleted": {
+    "_note": "Le fichier est RAMENÉ en `restricted` : l'image n'est plus servie publiquement — le cache d'image local doit être purgé.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Réalisation retirée",
+      "data": {
+        "removed": true,
+        "file": {
+          "id": "f1a2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b5c",
+          "originalName": "salle-de-bain.jpg",
+          "mimeType": "image/jpeg",
+          "size": 482113,
+          "visibility": "restricted"
+        }
+      }
+    }
+  },
+
+  "notFound": {
+    "_note": "Appartenance vérifiée : la réalisation d'un autre prestataire répond 404, jamais 403.",
+    "status": 404,
+    "body": {
+      "success": false,
+      "message": "Réalisation introuvable",
+      "errors": [],
+      "meta": { "correlationId": "44bb1322-ddee-4ff6-8112-3344556677ba" }
+    }
+  }
+}

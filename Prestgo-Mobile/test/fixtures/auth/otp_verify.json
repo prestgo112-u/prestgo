@@ -1,0 +1,86 @@
+{
+  "_source": "POST /auth/otp/verify — auth.controller.ts:123, account.service.ts:316",
+  "_note": "⚠️ DEUX formes de `data` sur la même route : `{ verified, activated }` pour phone_verification / email_verification, un COUPLE DE JETONS pour purpose=login. C'est le piège n°1 de cette opération.",
+
+  "activated": {
+    "_note": "Le compte était `pending` : la vérification l'active. C'est le scénario 1.3.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Compte activé",
+      "data": { "verified": true, "activated": true }
+    }
+  },
+
+  "verifiedOnly": {
+    "_note": "Le compte était déjà `active` : on vérifie un nouveau contact (scénario 1.10), rien n'est activé.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Code vérifié",
+      "data": { "verified": true, "activated": false }
+    }
+  },
+
+  "invalidCode": {
+    "_note": "Message unique et volontairement ambigu : un code faux et un code expiré sont indiscernables.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Code invalide ou expiré",
+      "errors": [],
+      "meta": { "correlationId": "d4e5f607-1829-4a3b-ccdd-eeff00112233" }
+    }
+  },
+
+  "malformedCode": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Le code doit contenir 6 chiffres",
+      "errors": [
+        {
+          "field": "code",
+          "code": "validation_error",
+          "message": "Le code doit contenir 6 chiffres"
+        }
+      ],
+      "meta": { "correlationId": "e5f60718-293a-4b4c-ddee-ff0011223344" }
+    }
+  },
+
+  "tooManyAttempts": {
+    "_note": "5 essais sur un MÊME code (OTP_MAX_ATTEMPTS). 401, pas 429 : ce n'est pas du débit, c'est ce code qui est brûlé. La saisie doit être désactivée et le renvoi proposé.",
+    "status": 401,
+    "body": {
+      "success": false,
+      "message": "Trop de tentatives. Demandez un nouveau code.",
+      "errors": [],
+      "meta": { "correlationId": "f6071829-3a4b-4c5d-eeff-001122334455" }
+    }
+  },
+
+  "loginTokens": {
+    "_note": "purpose=login : forme totalement différente — le couple de jetons de POST /auth/login.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Authenticated",
+      "data": {
+        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5ZjFjMmI3ZS0zZDU0LTRhMTAtOWI2ZS0yYzdkOGU1ZjRhMzEiLCJzaWQiOiJzZXNzLTAxIiwiaWF0IjoxNzg1NDk4MDAwLCJleHAiOjE3ODU0OTg5MDB9.otp-login-signature",
+        "refreshToken": "7f3d9a1c5b2e4680d3f7a9c1e5b8d2f406a7c9e1b3d5f7092a4c6e8b0d2f4a68"
+      }
+    }
+  },
+
+  "loginNoActiveAccount": {
+    "_note": "Code valide mais aucun compte actif ne correspond. Le message est celui de /auth/login : il est assaini par ApiException (jamais affiché tel quel).",
+    "status": 401,
+    "body": {
+      "success": false,
+      "message": "Account is not active",
+      "errors": [],
+      "meta": { "correlationId": "0718293a-4b5c-4d6e-ff00-112233445566" }
+    }
+  }
+}

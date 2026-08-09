@@ -1,0 +1,69 @@
+{
+  "_source": "POST /missions/{id}/review (opération 45) — FR-070, FR-071, data-model §6.",
+  "_note": "Client SEUL. Le 409 « déjà noté » est un SUCCÈS fonctionnel : l'avis existe, l'objectif est atteint — aucun écran n'affiche cette erreur. La fenêtre court depuis l'entrée en `completed` (historique), sa durée vient du réglage `reviewsWindowDays`.",
+
+  "created": {
+    "status": 201,
+    "body": {
+      "success": true,
+      "message": "Merci pour votre avis !",
+      "data": {
+        "id": "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
+        "rating": 5,
+        "comment": "Travail impeccable, ponctuel et soigneux.",
+        "status": "published",
+        "createdAt": "2026-07-30T18:22:41.007Z",
+        "mission": {
+          "id": "a75221c8-03a0-4dc7-a4c0-c0047ad0713c",
+          "scheduledAt": "2026-07-28T09:00:00.000Z",
+          "provider": {
+            "id": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+            "publicName": "Kofi Plomberie"
+          }
+        }
+      }
+    }
+  },
+
+  "duplicate": {
+    "_note": "TRAITÉ COMME UN SUCCÈS : l'avis est déjà là, l'écran enchaîne comme après un 201.",
+    "status": 409,
+    "body": {
+      "success": false,
+      "message": "Vous avez déjà déposé un avis sur cette mission",
+      "errors": [],
+      "meta": { "correlationId": "88ff5766-1122-433a-8556-778899aabdfe" }
+    }
+  },
+
+  "windowClosed": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "La fenêtre de dépôt d’avis est écoulée pour cette mission",
+      "errors": [],
+      "meta": { "correlationId": "99006877-2233-444b-8667-8899aabbce0f" }
+    }
+  },
+
+  "notCompleted": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Seule une mission terminée peut être notée",
+      "errors": [],
+      "meta": { "correlationId": "aa117988-3344-455c-8778-99aabbccdf10" }
+    }
+  },
+
+  "forbiddenProvider": {
+    "_note": "Le prestataire ne note pas : 403 — l'écran ne doit jamais lui présenter l'action (scénario 9.2).",
+    "status": 403,
+    "body": {
+      "success": false,
+      "message": "Seul le client de la mission peut déposer un avis",
+      "errors": [],
+      "meta": { "correlationId": "bb228a99-4455-466d-8889-aabbccdde021" }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+# Étiquettes de tests connues.
+#
+# `golden` : références visuelles générées sous Windows (test/widget/goldens) —
+# exclues de l'intégration continue Linux, vérifiées localement.
+tags:
+  golden:

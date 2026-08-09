@@ -1,0 +1,96 @@
+{
+  "_source": "POST /providers/me/submit — §2.2 P8 du cahier des charges (provider-self.service.ts:207, checklistErrors()).",
+  "_note": "Aucun corps. Le 400 « dossier incomplet » porte `errors[].field` = les clés de checklist à marquer en rouge — EXACTEMENT celles-là, ni plus ni moins (scénario 4.7). Le 403 « re-soumission bloquée » masque le bouton définitivement.",
+
+  "submitted": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Dossier soumis à la vérification",
+      "data": {
+        "id": "e7a41f9c-2b6d-4c83-9f05-8a1b2c3d4e5f",
+        "publicName": "Koffi Électricité Générale",
+        "bio": "Électricien depuis 8 ans à Abidjan. Installation, dépannage, mise aux normes.",
+        "experienceYears": 8,
+        "validationStatus": "pending_review",
+        "availabilityStatus": "available",
+        "score": 0,
+        "reviewsCount": 0,
+        "checklist": {
+          "profile": true,
+          "services": true,
+          "zones": true,
+          "availabilities": true,
+          "documents": true
+        },
+        "requiredDocumentTypes": ["id_card"],
+        "rejectionReason": null,
+        "resubmissionBlocked": false,
+        "submittedAt": "2026-07-31T14:02:51.007Z",
+        "canSubmit": false,
+        "createdAt": "2026-07-31T10:24:08.412Z"
+      }
+    }
+  },
+
+  "incomplete": {
+    "_note": "Erreur construite à la main par le service (`checklistErrors()`) : `field` = clé de checklist, `message` = libellé officiel.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Votre dossier n'est pas complet",
+      "errors": [
+        {
+          "field": "documents",
+          "code": "checklist_incomplete",
+          "message": "Fournissez tous les justificatifs obligatoires"
+        }
+      ],
+      "meta": { "correlationId": "bb223344-5566-466d-8889-aabbccdde127" }
+    }
+  },
+
+  "incompleteTwoLines": {
+    "_note": "Deux lignes désignées — l'écran passe en rouge CELLES-LÀ et rien d'autre.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Votre dossier n'est pas complet",
+      "errors": [
+        {
+          "field": "profile",
+          "code": "checklist_incomplete",
+          "message": "Complétez votre nom public et votre présentation"
+        },
+        {
+          "field": "documents",
+          "code": "checklist_incomplete",
+          "message": "Fournissez tous les justificatifs obligatoires"
+        }
+      ],
+      "meta": { "correlationId": "cc334455-6677-477e-899a-bbccddeef238" }
+    }
+  },
+
+  "nothingToSubmit": {
+    "_note": "Le statut a changé entre l'affichage et le clic : rafraîchir GET /providers/me.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Votre dossier est au statut « approved » : il n'y a rien à soumettre.",
+      "errors": [],
+      "meta": { "correlationId": "dd445566-7788-488f-8aab-ccddeeff0349" }
+    }
+  },
+
+  "resubmissionBlocked": {
+    "_note": "Correspond à `resubmissionBlocked: true` : masquer le bouton définitivement, proposer le contact support.",
+    "status": 403,
+    "body": {
+      "success": false,
+      "message": "La re-soumission de votre dossier a été bloquée. Contactez le support.",
+      "errors": [],
+      "meta": { "correlationId": "ee556677-8899-4990-8bbc-ddeeff01145a" }
+    }
+  }
+}

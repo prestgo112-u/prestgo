@@ -1,0 +1,121 @@
+{
+  "@@locale": "fr",
+
+  "appTitle": "PRESTGO",
+  "@appTitle": {
+    "description": "Nom de l'application, affiché dans le sélecteur de tâches"
+  },
+
+  "actionRetry": "Réessayer",
+  "@actionRetry": {
+    "description": "Action de reprise proposée par l'état d'erreur partagé"
+  },
+
+  "actionCancel": "Annuler",
+  "@actionCancel": {
+    "description": "Fermeture d'une boîte de dialogue sans effet"
+  },
+
+  "actionClose": "Fermer",
+  "@actionClose": {
+    "description": "Fermeture d'un panneau ou d'une feuille"
+  },
+
+  "actionContinue": "Continuer",
+  "@actionContinue": {
+    "description": "Passage à l'étape suivante d'un parcours"
+  },
+
+  "actionBack": "Retour",
+  "@actionBack": {
+    "description": "Retour à l'étape précédente"
+  },
+
+  "actionConfirm": "Confirmer",
+  "@actionConfirm": {
+    "description": "Validation d'une action à effet réel"
+  },
+
+  "actionSave": "Enregistrer",
+  "@actionSave": {
+    "description": "Enregistrement d'un formulaire"
+  },
+
+  "actionDelete": "Supprimer",
+  "@actionDelete": {
+    "description": "Retrait définitif d'un élément"
+  },
+
+  "actionDeactivate": "Désactiver",
+  "@actionDeactivate": {
+    "description": "Vocabulaire imposé pour la désactivation d'un compte ou d'une prestation — ne jamais dire « supprimer » (FR-012)"
+  },
+
+  "actionCopyReference": "Copier la référence pour le support",
+  "@actionCopyReference": {
+    "description": "Copie du correlationId depuis un écran d'erreur technique"
+  },
+
+  "referenceCopied": "Référence copiée.",
+  "@referenceCopied": {
+    "description": "Confirmation de copie du correlationId"
+  },
+
+  "loading": "Chargement…",
+  "@loading": {
+    "description": "État de chargement partagé"
+  },
+
+  "errorGeneric": "Une erreur est survenue. Réessayez.",
+  "@errorGeneric": {
+    "description": "Repli lorsque le service ne fournit aucun message affichable"
+  },
+
+  "errorNetwork": "Connexion impossible. Vérifiez votre réseau.",
+  "@errorNetwork": {
+    "description": "Repli en cas d'échec réseau, avant toute réponse du service"
+  },
+
+  "errorServer": "Le service est momentanément indisponible.",
+  "@errorServer": {
+    "description": "Repli sur une erreur 5xx"
+  },
+
+  "errorRateLimited": "Trop de tentatives. Patientez un instant avant de réessayer.",
+  "@errorRateLimited": {
+    "description": "Débit dépassé — accompagné d'une désactivation temporaire de l'action, jamais d'un rejeu"
+  },
+
+  "offlineBanner": "Hors ligne — consultation seule",
+  "@offlineBanner": {
+    "description": "Bannière permanente affichée sans connexion (US10)"
+  },
+
+  "offlineWriteBlocked": "Action indisponible hors ligne. Reconnectez-vous au réseau pour continuer.",
+  "@offlineWriteBlocked": {
+    "description": "Explication affichée à la place d'une action d'écriture hors ligne — rien n'est mis en file (FR-097)"
+  },
+
+  "dataAgeJustNow": "Mis à jour à l’instant",
+  "@dataAgeJustNow": {
+    "description": "Âge d'une donnée servie depuis le cache, moins d'une minute"
+  },
+
+  "dataAgeMinutes": "Mis à jour il y a {minutes} min",
+  "@dataAgeMinutes": {
+    "description": "Âge d'une donnée servie depuis le cache (FR-096)",
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+
+  "emptyDefaultTitle": "Rien à afficher pour le moment",
+  "@emptyDefaultTitle": {
+    "description": "Titre par défaut d'un état vide"
+  },
+
+  "amountAbsent": "—",
+  "@amountAbsent": {
+    "description": "Affiché à la place d'un montant absent — jamais « 0 XOF » (data-model §5.1)"
+  }
+}

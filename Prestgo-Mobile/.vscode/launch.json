@@ -1,0 +1,51 @@
+{
+  // Configurations de lancement VS Code.
+  //
+  // Sans ce fichier, F5 lance `assembleDebug` : trois saveurs étant déclarées
+  // dans android/app/build.gradle.kts, Gradle assemble les trois variantes et
+  // Flutter ne sait plus quel APK installer. Chaque configuration ci-dessous
+  // porte donc sa saveur ET son fichier de définitions, exactement comme la
+  // ligne de commande documentée dans le README.
+  //
+  // `toolArgs` passe les arguments à `flutter run` (et non à l'application).
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "PRESTGO dev",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "toolArgs": [
+        "--flavor",
+        "dev",
+        "--dart-define-from-file",
+        "env/dev.json"
+      ]
+    },
+    {
+      "name": "PRESTGO staging",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "toolArgs": [
+        "--flavor",
+        "staging",
+        "--dart-define-from-file",
+        "env/staging.json"
+      ]
+    },
+    {
+      "name": "PRESTGO prod",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "release",
+      "toolArgs": [
+        "--flavor",
+        "prod",
+        "--dart-define-from-file",
+        "env/prod.json"
+      ]
+    }
+  ]
+}

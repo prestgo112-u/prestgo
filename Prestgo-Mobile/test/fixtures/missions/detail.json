@@ -1,0 +1,267 @@
+{
+  "_source": "GET /missions/:id — §3.7 du cahier des charges, capture réelle (identifiants complétés là où la capture les abrégeait).",
+  "_note": "Accessible aux DEUX parties. `reschedules[]` ne contient que les demandes `requested` ; `reviews[]` est réduit à { id, authorId, rating } ; aucune coordonnée personnelle de l'autre partie.",
+
+  "confirmed": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "b86332d9-14a0-4ec8-b5d0-d0158ae1824d",
+        "status": "confirmed",
+        "scheduledAt": "2026-08-03T14:00:00.000Z",
+        "instructions": "Fuite sous l'évier de la cuisine.",
+        "quotedAmount": null,
+        "createdAt": "2026-07-19T11:16:12.582Z",
+        "client": {
+          "id": "c4f8a2e1-9d3b-4e5a-8f6c-1a2b3c4d5e6f",
+          "firstName": "Awa",
+          "lastName": "Client"
+        },
+        "provider": {
+          "id": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+          "publicName": "Kofi Plomberie",
+          "score": 0,
+          "reviewsCount": 0,
+          "avatarFileId": null
+        },
+        "pack": {
+          "id": "3a07a023-52c1-4c88-9e70-6f1b2d3c4e5f",
+          "title": "Réparation de fuite simple",
+          "price": 15000,
+          "durationMinutes": 60,
+          "providerService": {
+            "title": "Dépannage plomberie à domicile",
+            "serviceType": { "name": "Réparation de fuite" }
+          }
+        },
+        "options": [],
+        "address": {
+          "id": "b7ff0e66-a2c4-4d8e-9f10-1a2b3c4d5e6f",
+          "label": "Domicile",
+          "city": "Abidjan",
+          "commune": "Cocody",
+          "details": "Rue des Jardins, villa 12",
+          "latitude": 5.35,
+          "longitude": -3.98
+        },
+        "thread": { "id": "e6499753-8b1d-4f2e-a3c5-7d8e9f0a1b2c", "status": "open" },
+        "cancellation": null,
+        "reschedules": [],
+        "reviews": [
+          {
+            "id": "423c7674-1e5f-4a8b-9c0d-2e3f4a5b6c7d",
+            "authorId": "c4f8a2e1-9d3b-4e5a-8f6c-1a2b3c4d5e6f",
+            "rating": 2
+          }
+        ]
+      }
+    }
+  },
+
+  "withOptions": {
+    "_note": "Montant figé non nul, options retenues, instructions absentes.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "a75221c8-03a0-4dc7-a4c0-c0047ad0713c",
+        "status": "pending_provider",
+        "scheduledAt": "2026-08-06T09:00:00.000Z",
+        "instructions": null,
+        "quotedAmount": 25000,
+        "createdAt": "2026-07-30T08:05:44.120Z",
+        "client": {
+          "id": "c4f8a2e1-9d3b-4e5a-8f6c-1a2b3c4d5e6f",
+          "firstName": "Awa",
+          "lastName": "Client"
+        },
+        "provider": {
+          "id": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+          "publicName": "Kofi Plomberie",
+          "score": 4.5,
+          "reviewsCount": 12,
+          "avatarFileId": null
+        },
+        "pack": {
+          "id": "4b18b134-63d2-4d99-af81-702c3e4d5f60",
+          "title": "Installation de chauffe-eau",
+          "price": 20000,
+          "durationMinutes": 60,
+          "providerService": {
+            "title": "Dépannage plomberie à domicile",
+            "serviceType": { "name": "Installation sanitaire" }
+          }
+        },
+        "options": [
+          {
+            "id": "opt-91111111-1111-4111-8111-111111111111",
+            "title": "Dépose de l'ancien appareil",
+            "price": 5000,
+            "durationMinutes": 30,
+            "active": true
+          }
+        ],
+        "address": {
+          "id": "b7ff0e66-a2c4-4d8e-9f10-1a2b3c4d5e6f",
+          "label": "Domicile",
+          "city": "Abidjan",
+          "commune": "Cocody",
+          "details": "Rue des Jardins, villa 12",
+          "latitude": 5.35,
+          "longitude": -3.98
+        },
+        "thread": { "id": "f75a0864-9c2e-4a3f-b4d6-8e9f0a1b2c3d", "status": "open" },
+        "cancellation": null,
+        "reschedules": [],
+        "reviews": []
+      }
+    }
+  },
+
+  "cancelledLate": {
+    "_note": "`cancellation.late == true` : l'annulation tardive est signalée explicitement (FR-045).",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "f2a772a3-58f5-4b3d-e915-1549cf25c681",
+        "status": "cancelled",
+        "scheduledAt": "2026-07-28T09:00:00.000Z",
+        "instructions": null,
+        "quotedAmount": 15000,
+        "createdAt": "2026-07-20T10:00:00.000Z",
+        "client": {
+          "id": "c4f8a2e1-9d3b-4e5a-8f6c-1a2b3c4d5e6f",
+          "firstName": "Awa",
+          "lastName": "Client"
+        },
+        "provider": {
+          "id": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+          "publicName": "Kofi Plomberie",
+          "score": 4.5,
+          "reviewsCount": 12,
+          "avatarFileId": null
+        },
+        "pack": {
+          "id": "3a07a023-52c1-4c88-9e70-6f1b2d3c4e5f",
+          "title": "Réparation de fuite simple",
+          "price": 15000,
+          "durationMinutes": 60,
+          "providerService": {
+            "title": "Dépannage plomberie à domicile",
+            "serviceType": { "name": "Réparation de fuite" }
+          }
+        },
+        "options": [],
+        "address": {
+          "id": "b7ff0e66-a2c4-4d8e-9f10-1a2b3c4d5e6f",
+          "label": "Domicile",
+          "city": "Abidjan",
+          "commune": "Cocody",
+          "details": "Rue des Jardins, villa 12",
+          "latitude": 5.35,
+          "longitude": -3.98
+        },
+        "thread": { "id": "06b1b975-ad3f-4b40-c5e7-9f0a1b2c3d4e", "status": "closed" },
+        "cancellation": {
+          "reason": "Empêchement de dernière minute",
+          "details": "Je serai absent toute la journée.",
+          "late": true,
+          "createdAt": "2026-07-28T06:12:00.000Z"
+        },
+        "reschedules": [],
+        "reviews": []
+      }
+    }
+  },
+
+  "withPendingReschedule": {
+    "_note": "Une demande de report en attente, créée par le PRESTATAIRE : le client voit Accepter/Refuser. `createdBy` comparé à `GET /me.id` décide de l'affichage.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "b86332d9-14a0-4ec8-b5d0-d0158ae1824d",
+        "status": "confirmed",
+        "scheduledAt": "2026-08-03T14:00:00.000Z",
+        "instructions": "Fuite sous l'évier de la cuisine.",
+        "quotedAmount": null,
+        "createdAt": "2026-07-19T11:16:12.582Z",
+        "client": {
+          "id": "c4f8a2e1-9d3b-4e5a-8f6c-1a2b3c4d5e6f",
+          "firstName": "Awa",
+          "lastName": "Client"
+        },
+        "provider": {
+          "id": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+          "publicName": "Kofi Plomberie",
+          "score": 0,
+          "reviewsCount": 0,
+          "avatarFileId": null
+        },
+        "pack": {
+          "id": "3a07a023-52c1-4c88-9e70-6f1b2d3c4e5f",
+          "title": "Réparation de fuite simple",
+          "price": 15000,
+          "durationMinutes": 60,
+          "providerService": {
+            "title": "Dépannage plomberie à domicile",
+            "serviceType": { "name": "Réparation de fuite" }
+          }
+        },
+        "options": [],
+        "address": {
+          "id": "b7ff0e66-a2c4-4d8e-9f10-1a2b3c4d5e6f",
+          "label": "Domicile",
+          "city": "Abidjan",
+          "commune": "Cocody",
+          "details": "Rue des Jardins, villa 12",
+          "latitude": 5.35,
+          "longitude": -3.98
+        },
+        "thread": { "id": "e6499753-8b1d-4f2e-a3c5-7d8e9f0a1b2c", "status": "open" },
+        "cancellation": null,
+        "reschedules": [
+          {
+            "id": "r-17c2fa86-be40-4c51-d6f8-0a1b2c3d4e5f",
+            "oldScheduledAt": "2026-08-03T14:00:00.000Z",
+            "newScheduledAt": "2026-08-06T10:00:00.000Z",
+            "reason": "Je suis pris sur un autre chantier ce jour-là.",
+            "status": "requested",
+            "createdBy": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+            "decidedBy": null,
+            "decidedAt": null,
+            "decisionReason": null,
+            "createdAt": "2026-07-31T18:20:00.000Z"
+          }
+        ],
+        "reviews": []
+      }
+    }
+  },
+
+  "notParty": {
+    "status": 403,
+    "body": {
+      "success": false,
+      "message": "Vous n'êtes pas partie à cette mission",
+      "errors": [],
+      "meta": { "correlationId": "bb220033-4455-4667-8889-aabbccddee01" }
+    }
+  },
+
+  "notFound": {
+    "status": 404,
+    "body": {
+      "success": false,
+      "message": "Mission introuvable",
+      "errors": [],
+      "meta": { "correlationId": "cc330044-5566-4778-899a-bbccddeeff12" }
+    }
+  }
+}

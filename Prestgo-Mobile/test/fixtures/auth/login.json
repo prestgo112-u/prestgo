@@ -1,0 +1,64 @@
+{
+  "_source": "POST /auth/login — auth.controller.ts:41, auth.service.ts:45",
+  "_note": "10 tentatives par minute et par IP (THROTTLE_LOGIN). `Invalid credentials` et `Account is not active` sont deux 401 distincts qu'il faut savoir séparer, mais qu'on n'affiche jamais tels quels.",
+
+  "authenticated": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Authenticated",
+      "data": {
+        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjNGY4YTJlMS05ZDNiLTRlNWEtOGY2Yy0xYTJiM2M0ZDVlNmYiLCJzaWQiOiJzZXNzLTQyIiwiaWF0IjoxNzg1NDk4MDAwLCJleHAiOjE3ODU0OTg5MDB9.access-signature",
+        "refreshToken": "1c3e5a7092b4d6f8012a3c5e7b9d1f3502a4c6e8b0d2f4a6819b3d5f7092a4c6"
+      }
+    }
+  },
+
+  "invalidCredentials": {
+    "_note": "Même message pour un email inconnu et un mot de passe faux : rien ne dit lequel des deux est en cause.",
+    "status": 401,
+    "body": {
+      "success": false,
+      "message": "Invalid credentials",
+      "errors": [],
+      "meta": { "correlationId": "18293a4b-5c6d-4e7f-0011-223344556677" }
+    }
+  },
+
+  "accountNotActive": {
+    "_note": "Compte `pending`, `suspended` ou `deleted`. L'écran doit proposer la vérification, pas répéter « identifiants incorrects ».",
+    "status": 401,
+    "body": {
+      "success": false,
+      "message": "Account is not active",
+      "errors": [],
+      "meta": { "correlationId": "293a4b5c-6d7e-4f80-1122-334455667788" }
+    }
+  },
+
+  "invalidEmailFormat": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Adresse email invalide",
+      "errors": [
+        {
+          "field": "email",
+          "code": "validation_error",
+          "message": "Adresse email invalide"
+        }
+      ],
+      "meta": { "correlationId": "3a4b5c6d-7e8f-4901-2233-445566778899" }
+    }
+  },
+
+  "rateLimited": {
+    "status": 429,
+    "body": {
+      "success": false,
+      "message": "Trop de tentatives en peu de temps. Merci de réessayer dans une minute.",
+      "errors": [],
+      "meta": { "correlationId": "4b5c6d7e-8f90-4a12-3344-5566778899aa" }
+    }
+  }
+}

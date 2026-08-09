@@ -1,0 +1,207 @@
+{
+  "_source": "POST /missions/:id/reschedule, POST .../reschedule/:rid/accept|reject, GET /missions/:id/reschedules — §3.7 du cahier des charges.",
+  "_note": "UNE SEULE demande en attente par mission. Les actions Accepter/Refuser sont MASQUÉES sur ses propres demandes (`createdBy` comparé à `GET /me.id` — le 403 `ownRequest` ne devrait jamais être atteint). Le créneau est REVALIDÉ au moment de l'acceptation.",
+
+  "historyAll": {
+    "_note": "GET — l'historique COMPLET, tous statuts (`requested`, `accepted`, `rejected`, `applied`), contrairement à `mission.reschedules` qui ne porte que les demandes en attente.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "r-17c2fa86-be40-4c51-d6f8-0a1b2c3d4e5f",
+          "oldScheduledAt": "2026-08-03T14:00:00.000Z",
+          "newScheduledAt": "2026-08-06T10:00:00.000Z",
+          "reason": "Je ne serai pas là mercredi.",
+          "status": "requested",
+          "createdBy": "c4f8a2e1-9d3b-4e5a-8f6c-1a2b3c4d5e6f",
+          "decidedBy": null,
+          "decidedAt": null,
+          "decisionReason": null,
+          "createdAt": "2026-07-31T18:20:00.000Z"
+        },
+        {
+          "id": "r-06b1e975-ad3f-4b40-c5e7-9f0a1b2c3d4e",
+          "oldScheduledAt": "2026-08-01T10:00:00.000Z",
+          "newScheduledAt": "2026-08-03T14:00:00.000Z",
+          "reason": "Empêchement professionnel.",
+          "status": "accepted",
+          "createdBy": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+          "decidedBy": "c4f8a2e1-9d3b-4e5a-8f6c-1a2b3c4d5e6f",
+          "decidedAt": "2026-07-25T09:00:00.000Z",
+          "decisionReason": null,
+          "createdAt": "2026-07-25T08:30:00.000Z"
+        },
+        {
+          "id": "r-f5a0d864-9c2e-4a3f-b4d6-8e9f0a1b2c3d",
+          "oldScheduledAt": "2026-08-01T10:00:00.000Z",
+          "newScheduledAt": "2026-08-02T16:00:00.000Z",
+          "reason": null,
+          "status": "rejected",
+          "createdBy": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+          "decidedBy": "c4f8a2e1-9d3b-4e5a-8f6c-1a2b3c4d5e6f",
+          "decidedAt": "2026-07-24T19:45:00.000Z",
+          "decisionReason": "Je ne suis pas disponible ce soir-là.",
+          "createdAt": "2026-07-24T18:00:00.000Z"
+        }
+      ]
+    }
+  },
+
+  "requested": {
+    "_note": "POST — capture réelle : la demande part en `requested`, l'autre partie doit répondre.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Demande de report envoyée. Elle doit être acceptée par l'autre partie.",
+      "data": {
+        "id": "r-2a84fb97-cf51-4d62-e709-1b2c3d4e5f60",
+        "newScheduledAt": "2026-08-06T10:00:00.000Z",
+        "reason": "Je ne serai pas là mercredi.",
+        "status": "requested",
+        "createdAt": "2026-08-01T09:15:00.000Z"
+      }
+    }
+  },
+
+  "alreadyPending": {
+    "_note": "UNE SEULE demande en vol à la fois : griser l'action quand `mission.reschedules` est non vide (scénario 3.3).",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Une demande de report est déjà en attente de réponse",
+      "errors": [],
+      "meta": { "correlationId": "2299bbcc-ccdd-4eef-9001-234567890abc" }
+    }
+  },
+
+  "tooSoon": {
+    "_note": "Message interpolé avec la valeur en vigueur : affiché tel quel.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "La nouvelle date doit être au moins 60 minutes dans le futur",
+      "errors": [],
+      "meta": { "correlationId": "33aaccdd-ddee-4ff0-9112-34567890abcd" }
+    }
+  },
+
+  "sameDate": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "La nouvelle date est identique à la date actuelle",
+      "errors": [],
+      "meta": { "correlationId": "44bbddee-eeff-4001-9223-4567890abcde" }
+    }
+  },
+
+  "notReschedulable": {
+    "_note": "Seuls `pending_provider` et `confirmed` sont reprogrammables.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Une mission au statut « completed » ne peut plus être reprogrammée",
+      "errors": [],
+      "meta": { "correlationId": "55cceeff-ff00-4112-9334-567890abcdef" }
+    }
+  },
+
+  "slotUnavailable": {
+    "_note": "Rouvrir le sélecteur — même famille : « Le prestataire est absent à cette date », « Le prestataire a déjà une mission sur ce créneau ».",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Le prestataire ne travaille pas sur ce créneau",
+      "errors": [],
+      "meta": { "correlationId": "66ddff00-0011-4223-9445-67890abcdef0" }
+    }
+  },
+
+  "accepted": {
+    "_note": "Accept — la mission est DÉPLACÉE : `scheduledAt` est la nouvelle date.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Report accepté. La mission est déplacée.",
+      "data": {
+        "id": "r-17c2fa86-be40-4c51-d6f8-0a1b2c3d4e5f",
+        "status": "accepted",
+        "scheduledAt": "2026-08-06T10:00:00.000Z"
+      }
+    }
+  },
+
+  "rejected": {
+    "_note": "Reject — la date d'origine tient.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Report refusé. La date d'origine est maintenue.",
+      "data": {
+        "id": "r-17c2fa86-be40-4c51-d6f8-0a1b2c3d4e5f",
+        "status": "rejected"
+      }
+    }
+  },
+
+  "slotGone": {
+    "_note": "Le créneau est revalidé AU MOMENT de l'acceptation : proposer une contre-proposition (scénario 3.5).",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Le prestataire n'est plus disponible sur ce créneau",
+      "errors": [],
+      "meta": { "correlationId": "77ee0011-1122-4334-9556-7890abcdef01" }
+    }
+  },
+
+  "alreadyDecided": {
+    "_note": "Rafraîchir le détail : la demande a été traitée entre-temps.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Cette demande a déjà été traitée (statut « accepted »)",
+      "errors": [],
+      "meta": { "correlationId": "88ff1122-2233-4445-9667-890abcdef012" }
+    }
+  },
+
+  "rejectMissingReason": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Un motif est obligatoire pour refuser un report",
+      "errors": [
+        {
+          "field": "reason",
+          "code": "too_small",
+          "message": "Un motif est obligatoire pour refuser un report"
+        }
+      ],
+      "meta": { "correlationId": "99002233-3344-4556-9778-90abcdef0123" }
+    }
+  },
+
+  "ownRequest": {
+    "_note": "Ne devrait JAMAIS être atteint : l'UI masque Accepter/Refuser sur ses propres demandes.",
+    "status": 403,
+    "body": {
+      "success": false,
+      "message": "Vous ne pouvez pas répondre à votre propre demande de report",
+      "errors": [],
+      "meta": { "correlationId": "aa113344-4455-4667-9889-0abcdef01234" }
+    }
+  },
+
+  "notFound": {
+    "status": 404,
+    "body": {
+      "success": false,
+      "message": "Demande de report introuvable",
+      "errors": [],
+      "meta": { "correlationId": "bb224455-5566-4778-999a-abcdef012345" }
+    }
+  }
+}

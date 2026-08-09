@@ -1,0 +1,132 @@
+{
+  "_source": "GET /messages/threads/:id/messages — §3.11 du cahier des charges (écart n°12 clos : route PAGINÉE, mêmes paramètres que toute liste de l'API).",
+  "_note": "Tri par défaut `createdAt` CROISSANT : la page 1 est le DÉBUT du fil. L'écran demande `sort=-createdAt` pour ouvrir sur les messages récents. Élément : { id, senderId, message, createdAt, readAt?, files: [ { file: { id, originalName, mimeType, size } } ] }. `senderId` null = message système.",
+
+  "recentDesc": {
+    "_note": "?limit=20&sort=-createdAt — les plus récents d'abord (page 1 de 3, total 47).",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "m-47",
+          "senderId": "71e88780-d204-4145-b06d-b9e3acdbb365",
+          "message": "Parfait, à demain.",
+          "createdAt": "2026-07-30T10:05:41.220Z",
+          "readAt": null,
+          "files": []
+        },
+        {
+          "id": "m-46",
+          "senderId": "c4f8a2e1-9d3b-4e5a-8f6c-1a2b3c4d5e6f",
+          "message": "Je serai là à 14h précises.",
+          "createdAt": "2026-07-30T10:02:18.006Z",
+          "readAt": "2026-07-30T10:04:00.512Z",
+          "files": []
+        },
+        {
+          "id": "m-45",
+          "senderId": null,
+          "message": "Mission confirmée.",
+          "createdAt": "2026-07-29T18:30:00.000Z",
+          "readAt": null,
+          "files": []
+        },
+        {
+          "id": "m-44",
+          "senderId": "71e88780-d204-4145-b06d-b9e3acdbb365",
+          "message": "Voici la photo du compteur.",
+          "createdAt": "2026-07-29T17:52:09.881Z",
+          "readAt": "2026-07-29T18:01:15.040Z",
+          "files": [
+            {
+              "file": {
+                "id": "file-plan-1",
+                "originalName": "compteur.jpg",
+                "mimeType": "image/jpeg",
+                "size": 245678
+              }
+            }
+          ]
+        }
+      ],
+      "meta": { "page": 1, "limit": 20, "total": 47 }
+    }
+  },
+
+  "olderDesc": {
+    "_note": "?page=2&limit=20&sort=-createdAt — la page suivante en remontant l'historique.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "m-27",
+          "senderId": "c4f8a2e1-9d3b-4e5a-8f6c-1a2b3c4d5e6f",
+          "message": "D'accord pour mercredi.",
+          "createdAt": "2026-07-24T09:12:33.104Z",
+          "readAt": "2026-07-24T09:20:01.330Z",
+          "files": []
+        },
+        {
+          "id": "m-26",
+          "senderId": "71e88780-d204-4145-b06d-b9e3acdbb365",
+          "message": "Je peux passer mercredi matin.",
+          "createdAt": "2026-07-24T08:58:47.771Z",
+          "readAt": "2026-07-24T09:00:12.900Z",
+          "files": []
+        }
+      ],
+      "meta": { "page": 2, "limit": 20, "total": 47 }
+    }
+  },
+
+  "defaultAsc": {
+    "_note": "Sans paramètre `sort` : ordre CROISSANT, la page 1 est le début de la conversation.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "b4169c91-5a02-46da-9cc1-4a1a80e00c53",
+          "senderId": "71e88780-d204-4145-b06d-b9e3acdbb365",
+          "message": "Bonjour, à quelle heure passez-vous ?",
+          "createdAt": "2026-07-19T11:16:12.592Z",
+          "readAt": "2026-07-19T11:30:00.000Z",
+          "files": []
+        },
+        {
+          "id": "m-2",
+          "senderId": "c4f8a2e1-9d3b-4e5a-8f6c-1a2b3c4d5e6f",
+          "message": "Bonjour, en début d'après-midi.",
+          "createdAt": "2026-07-19T11:45:27.310Z",
+          "readAt": "2026-07-19T12:00:41.008Z",
+          "files": []
+        }
+      ],
+      "meta": { "page": 1, "limit": 20, "total": 47 }
+    }
+  },
+
+  "empty": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [],
+      "meta": { "page": 1, "limit": 20, "total": 0 }
+    }
+  },
+
+  "notParty": {
+    "status": 403,
+    "body": {
+      "success": false,
+      "message": "Vous n'êtes pas partie à la mission de cette conversation",
+      "meta": { "correlationId": "corr-us6-403-read" }
+    }
+  }
+}

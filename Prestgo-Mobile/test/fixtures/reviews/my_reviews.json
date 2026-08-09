@@ -1,0 +1,70 @@
+{
+  "_source": "GET /me/reviews (opération 46) — FR-072, data-model §6.",
+  "_note": "Paginé. Les quatre états de modération coexistent : `published` et `reported` affichent le contenu (un avis signalé RESTE visible), `hidden` et `rejected` sont remplacés par une mention de retrait. Ni modification ni suppression.",
+
+  "firstPage": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
+          "rating": 5,
+          "comment": "Travail impeccable, ponctuel et soigneux.",
+          "status": "published",
+          "createdAt": "2026-07-30T18:22:41.007Z",
+          "mission": {
+            "id": "a75221c8-03a0-4dc7-a4c0-c0047ad0713c",
+            "scheduledAt": "2026-07-28T09:00:00.000Z",
+            "provider": {
+              "id": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+              "publicName": "Kofi Plomberie"
+            }
+          }
+        },
+        {
+          "id": "8b7c6d5e-4f3a-4b2c-8d1e-0f9a8b7c6d5e",
+          "rating": 2,
+          "comment": "Retard important et chantier laissé sale.",
+          "status": "reported",
+          "createdAt": "2026-07-25T10:11:02.550Z",
+          "mission": {
+            "id": "b86332d9-14b1-4ed8-b5d1-d1158be1824d",
+            "scheduledAt": "2026-07-22T14:00:00.000Z",
+            "provider": {
+              "id": "77dc7ee9-0993-4a55-a2bc-c6d163f12c4e",
+              "publicName": "Mensah Rénovation"
+            }
+          }
+        },
+        {
+          "id": "7c6d5e4f-3a2b-4c1d-8e0f-9a8b7c6d5e4f",
+          "rating": 1,
+          "comment": "Contenu retiré par la modération.",
+          "status": "hidden",
+          "createdAt": "2026-07-18T16:45:19.204Z",
+          "mission": {
+            "id": "c97443ea-25c2-4fe9-b6e2-e2269cf2935e",
+            "scheduledAt": "2026-07-15T08:30:00.000Z",
+            "provider": {
+              "id": "88ed8ffa-1aa4-4b66-b3cd-d7e274a23d5f",
+              "publicName": "Diabaté Électricité"
+            }
+          }
+        }
+      ],
+      "meta": { "page": 1, "limit": 20, "total": 3 }
+    }
+  },
+
+  "empty": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [],
+      "meta": { "page": 1, "limit": 20, "total": 0 }
+    }
+  }
+}

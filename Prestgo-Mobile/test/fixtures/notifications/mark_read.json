@@ -1,0 +1,31 @@
+{
+  "_source": "PATCH /me/notifications/:id/read et POST /me/notifications/read-all — §3.10 du cahier des charges.",
+  "_note": "Le marquage unitaire est IDEMPOTENT : déjà lue, inexistante ou à autrui → { updated: 0 }, jamais d'erreur. La mise à jour optimiste est donc sans risque. Aucune route de suppression n'existe.",
+
+  "one": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": { "updated": 1 }
+    }
+  },
+
+  "alreadyRead": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": { "updated": 0 }
+    }
+  },
+
+  "readAll": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "3 notification(s) marquée(s) lue(s)",
+      "data": { "updated": 3 }
+    }
+  }
+}

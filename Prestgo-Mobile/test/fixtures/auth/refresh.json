@@ -1,0 +1,27 @@
+{
+  "_source": "POST /auth/refresh — auth.controller.ts:54, auth.service.ts:126",
+  "_note": "⚠️ Le jeton de renouvellement TOURNE : celui envoyé est révoqué, le nouveau doit remplacer l'ancien. Écrire les deux jetons séparément casserait la session au renouvellement suivant — d'où l'entrée unique de SecureTokenStore.",
+
+  "rotated": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Refreshed",
+      "data": {
+        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjNGY4YTJlMS05ZDNiLTRlNWEtOGY2Yy0xYTJiM2M0ZDVlNmYiLCJzaWQiOiJzZXNzLTQyIiwiaWF0IjoxNzg1NDk4OTAwLCJleHAiOjE3ODU0OTk4MDB9.rotated-access-signature",
+        "refreshToken": "9d1f3502a4c6e8b0d2f4a6819b3d5f7092a4c61c3e5a7092b4d6f8012a3c5e7b"
+      }
+    }
+  },
+
+  "expired": {
+    "_note": "Jeton révoqué, expiré, ou déjà consommé par une rotation. Aucune reprise possible : purge et retour à la connexion.",
+    "status": 401,
+    "body": {
+      "success": false,
+      "message": "Session expirée. Reconnectez-vous.",
+      "errors": [],
+      "meta": { "correlationId": "5c6d7e8f-9012-4b34-4455-66778899aabb" }
+    }
+  }
+}

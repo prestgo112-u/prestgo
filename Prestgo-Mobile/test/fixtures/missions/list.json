@@ -1,0 +1,205 @@
+{
+  "_source": "GET /me/missions — §3.7 du cahier des charges, capture réelle du 2026-07-19 complétée des formes par onglet (écart n°7 clos : `status` accepte une liste séparée par des virgules).",
+  "_note": "Tri par défaut côté client : `scheduledAt desc`. `quotedAmount` peut être null (mission antérieure au montant figé) : afficher « — », jamais « 0 XOF ».",
+
+  "confirmedOnly": {
+    "_note": "Capture réelle : ?status=confirmed&page=1&limit=20.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "b86332d9-14a0-4ec8-b5d0-d0158ae1824d",
+          "status": "confirmed",
+          "scheduledAt": "2026-08-03T14:00:00.000Z",
+          "quotedAmount": null,
+          "durationMinutes": 60,
+          "packTitle": "Réparation de fuite simple",
+          "clientName": "Awa Client",
+          "providerId": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+          "providerName": "Kofi Plomberie",
+          "providerAvatarFileId": null,
+          "city": "Abidjan",
+          "commune": "Cocody",
+          "createdAt": "2026-07-19T11:16:12.582Z"
+        }
+      ],
+      "meta": { "page": 1, "limit": 20, "total": 1 }
+    }
+  },
+
+  "upcoming": {
+    "_note": "Onglet « À venir » : ?status=pending_provider,confirmed — UNION des deux statuts en un seul appel, `meta.total` reflète l'union.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "a75221c8-03a0-4dc7-a4c0-c0047ad0713c",
+          "status": "pending_provider",
+          "scheduledAt": "2026-08-06T09:00:00.000Z",
+          "quotedAmount": 25000,
+          "durationMinutes": 90,
+          "packTitle": "Installation de chauffe-eau",
+          "clientName": "Awa Client",
+          "providerId": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+          "providerName": "Kofi Plomberie",
+          "providerAvatarFileId": null,
+          "city": "Abidjan",
+          "commune": "Cocody",
+          "createdAt": "2026-07-30T08:05:44.120Z"
+        },
+        {
+          "id": "b86332d9-14a0-4ec8-b5d0-d0158ae1824d",
+          "status": "confirmed",
+          "scheduledAt": "2026-08-03T14:00:00.000Z",
+          "quotedAmount": null,
+          "durationMinutes": 60,
+          "packTitle": "Réparation de fuite simple",
+          "clientName": "Awa Client",
+          "providerId": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+          "providerName": "Kofi Plomberie",
+          "providerAvatarFileId": null,
+          "city": "Abidjan",
+          "commune": "Cocody",
+          "createdAt": "2026-07-19T11:16:12.582Z"
+        }
+      ],
+      "meta": { "page": 1, "limit": 20, "total": 2 }
+    }
+  },
+
+  "completedTab": {
+    "_note": "Onglet « Terminées » : ?status=completed,closed — un SEUL appel pour les deux statuts (scénario 3.1).",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "c9744fd0-25c2-4e0a-b6e2-e2169cf2935e",
+          "status": "completed",
+          "scheduledAt": "2026-07-12T10:00:00.000Z",
+          "quotedAmount": 15000,
+          "durationMinutes": 60,
+          "packTitle": "Réparation de fuite simple",
+          "clientName": "Awa Client",
+          "providerId": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+          "providerName": "Kofi Plomberie",
+          "providerAvatarFileId": null,
+          "city": "Abidjan",
+          "commune": "Cocody",
+          "createdAt": "2026-07-02T16:40:03.008Z"
+        },
+        {
+          "id": "d08550e1-36d3-4f1b-c7f3-f327ad03a46f",
+          "status": "closed",
+          "scheduledAt": "2026-06-20T08:30:00.000Z",
+          "quotedAmount": 32000,
+          "durationMinutes": 120,
+          "packTitle": "Débouchage canalisation",
+          "clientName": "Awa Client",
+          "providerId": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+          "providerName": "Kofi Plomberie",
+          "providerAvatarFileId": null,
+          "city": "Abidjan",
+          "commune": "Plateau",
+          "createdAt": "2026-06-11T13:22:51.442Z"
+        }
+      ],
+      "meta": { "page": 1, "limit": 20, "total": 2 }
+    }
+  },
+
+  "firstOfTwoPages": {
+    "_note": "Pagination : page 1/2, total 3 — `meta` pilote le défilement continu.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "c9744fd0-25c2-4e0a-b6e2-e2169cf2935e",
+          "status": "completed",
+          "scheduledAt": "2026-07-12T10:00:00.000Z",
+          "quotedAmount": 15000,
+          "durationMinutes": 60,
+          "packTitle": "Réparation de fuite simple",
+          "clientName": "Awa Client",
+          "providerId": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+          "providerName": "Kofi Plomberie",
+          "providerAvatarFileId": null,
+          "city": "Abidjan",
+          "commune": "Cocody",
+          "createdAt": "2026-07-02T16:40:03.008Z"
+        },
+        {
+          "id": "d08550e1-36d3-4f1b-c7f3-f327ad03a46f",
+          "status": "closed",
+          "scheduledAt": "2026-06-20T08:30:00.000Z",
+          "quotedAmount": 32000,
+          "durationMinutes": 120,
+          "packTitle": "Débouchage canalisation",
+          "clientName": "Awa Client",
+          "providerId": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+          "providerName": "Kofi Plomberie",
+          "providerAvatarFileId": null,
+          "city": "Abidjan",
+          "commune": "Plateau",
+          "createdAt": "2026-06-11T13:22:51.442Z"
+        }
+      ],
+      "meta": { "page": 1, "limit": 2, "total": 3 }
+    }
+  },
+
+  "secondOfTwoPages": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "e19661f2-47e4-4a2c-d804-0438be14b570",
+          "status": "closed",
+          "scheduledAt": "2026-05-02T15:00:00.000Z",
+          "quotedAmount": 8000,
+          "durationMinutes": 45,
+          "packTitle": "Remplacement de robinet",
+          "clientName": "Awa Client",
+          "providerId": "66cb6dd8-f882-4944-91ab-b5c052e01b3d",
+          "providerName": "Kofi Plomberie",
+          "providerAvatarFileId": null,
+          "city": "Abidjan",
+          "commune": "Cocody",
+          "createdAt": "2026-04-25T09:12:33.771Z"
+        }
+      ],
+      "meta": { "page": 2, "limit": 2, "total": 3 }
+    }
+  },
+
+  "empty": {
+    "_note": "Onglet vide : message spécifique par onglet, bouton « Réserver une prestation » sur À venir.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [],
+      "meta": { "page": 1, "limit": 20, "total": 0 }
+    }
+  },
+
+  "unknownStatus": {
+    "_note": "Une liste contenant UN SEUL statut inconnu est refusée EN BLOC.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Statut de mission inconnu",
+      "errors": [],
+      "meta": { "correlationId": "aa110022-3344-4556-8778-99aabbccdde0" }
+    }
+  }
+}

@@ -1,0 +1,465 @@
+{
+  "_source": "POST/GET/PATCH /providers/me — §2.2 P2 et P8, §5.2 du cahier des charges (provider-self.controller.ts, provider-checklist.ts).",
+  "_note": "Le corps de POST (201) et de PATCH (200) est LE MÊME DTO que GET /providers/me (ProviderOverviewDto) : l'aperçu complet, checklist déjà calculée. Le 409 de POST n'est PAS une erreur pour l'application : reprendre par GET et naviguer vers le hub. `canSubmit` pilote le bouton Soumettre — jamais la checklist seule.",
+
+  "created": {
+    "_note": "P2 avec présentation renseignée : la case `profile` est déjà verte.",
+    "status": 201,
+    "body": {
+      "success": true,
+      "message": "Profil prestataire créé. Complétez votre dossier pour le soumettre.",
+      "data": {
+        "id": "e7a41f9c-2b6d-4c83-9f05-8a1b2c3d4e5f",
+        "publicName": "Koffi Électricité Générale",
+        "bio": "Électricien depuis 8 ans à Abidjan. Installation, dépannage, mise aux normes.",
+        "experienceYears": 8,
+        "validationStatus": "profile_incomplete",
+        "availabilityStatus": "available",
+        "score": 0,
+        "reviewsCount": 0,
+        "checklist": {
+          "profile": true,
+          "services": false,
+          "zones": false,
+          "availabilities": false,
+          "documents": false
+        },
+        "requiredDocumentTypes": ["id_card"],
+        "rejectionReason": null,
+        "resubmissionBlocked": false,
+        "submittedAt": null,
+        "canSubmit": false,
+        "createdAt": "2026-07-31T10:24:08.412Z"
+      }
+    }
+  },
+
+  "createdWithoutBio": {
+    "_note": "Piège n°1 de P8 : `bio` est facultative à la création mais exigée par la checklist — `profile` reste FAUX (scénario 4.1).",
+    "status": 201,
+    "body": {
+      "success": true,
+      "message": "Profil prestataire créé. Complétez votre dossier pour le soumettre.",
+      "data": {
+        "id": "e7a41f9c-2b6d-4c83-9f05-8a1b2c3d4e5f",
+        "publicName": "Koffi Électricité Générale",
+        "bio": null,
+        "experienceYears": 8,
+        "validationStatus": "profile_incomplete",
+        "availabilityStatus": "available",
+        "score": 0,
+        "reviewsCount": 0,
+        "checklist": {
+          "profile": false,
+          "services": false,
+          "zones": false,
+          "availabilities": false,
+          "documents": false
+        },
+        "requiredDocumentTypes": ["id_card"],
+        "rejectionReason": null,
+        "resubmissionBlocked": false,
+        "submittedAt": null,
+        "canSubmit": false,
+        "createdAt": "2026-07-31T10:24:08.412Z"
+      }
+    }
+  },
+
+  "validation": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Le nom public doit contenir au moins 2 caractères",
+      "errors": [
+        {
+          "field": "publicName",
+          "code": "too_small",
+          "message": "Le nom public doit contenir au moins 2 caractères"
+        }
+      ],
+      "meta": { "correlationId": "aa110022-3344-4556-8778-99aabbccdd10" }
+    }
+  },
+
+  "alreadyExists": {
+    "_note": "Reprise d'un parcours interrompu : NE PAS traiter comme une erreur — GET /providers/me puis hub (scénario 4.3).",
+    "status": 409,
+    "body": {
+      "success": false,
+      "message": "Ce compte a déjà un profil prestataire",
+      "errors": [],
+      "meta": { "correlationId": "bb220033-4455-4667-8889-aabbccddee21" }
+    }
+  },
+
+  "noProfile": {
+    "_note": "Toutes les routes /providers/me/* tant que POST /providers/me n'a pas réussi → renvoyer vers P2.",
+    "status": 403,
+    "body": {
+      "success": false,
+      "message": "Ce compte n'a pas de profil prestataire",
+      "errors": [],
+      "meta": { "correlationId": "cc330044-5566-4778-899a-bbccddeeff32" }
+    }
+  },
+
+  "overviewIncomplete": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "e7a41f9c-2b6d-4c83-9f05-8a1b2c3d4e5f",
+        "publicName": "Koffi Électricité Générale",
+        "bio": "Électricien depuis 8 ans à Abidjan. Installation, dépannage, mise aux normes.",
+        "experienceYears": 8,
+        "validationStatus": "profile_incomplete",
+        "availabilityStatus": "available",
+        "score": 0,
+        "reviewsCount": 0,
+        "checklist": {
+          "profile": true,
+          "services": false,
+          "zones": true,
+          "availabilities": false,
+          "documents": false
+        },
+        "requiredDocumentTypes": ["id_card"],
+        "rejectionReason": null,
+        "resubmissionBlocked": false,
+        "submittedAt": null,
+        "canSubmit": false,
+        "createdAt": "2026-07-31T10:24:08.412Z"
+      }
+    }
+  },
+
+  "overviewComplete": {
+    "_note": "Les cinq cases vertes ET statut soumissible : `canSubmit` passe à vrai.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "e7a41f9c-2b6d-4c83-9f05-8a1b2c3d4e5f",
+        "publicName": "Koffi Électricité Générale",
+        "bio": "Électricien depuis 8 ans à Abidjan. Installation, dépannage, mise aux normes.",
+        "experienceYears": 8,
+        "validationStatus": "profile_incomplete",
+        "availabilityStatus": "available",
+        "score": 0,
+        "reviewsCount": 0,
+        "checklist": {
+          "profile": true,
+          "services": true,
+          "zones": true,
+          "availabilities": true,
+          "documents": true
+        },
+        "requiredDocumentTypes": ["id_card"],
+        "rejectionReason": null,
+        "resubmissionBlocked": false,
+        "submittedAt": null,
+        "canSubmit": true,
+        "createdAt": "2026-07-31T10:24:08.412Z"
+      }
+    }
+  },
+
+  "overviewPendingReview": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "e7a41f9c-2b6d-4c83-9f05-8a1b2c3d4e5f",
+        "publicName": "Koffi Électricité Générale",
+        "bio": "Électricien depuis 8 ans à Abidjan. Installation, dépannage, mise aux normes.",
+        "experienceYears": 8,
+        "validationStatus": "pending_review",
+        "availabilityStatus": "available",
+        "score": 0,
+        "reviewsCount": 0,
+        "checklist": {
+          "profile": true,
+          "services": true,
+          "zones": true,
+          "availabilities": true,
+          "documents": true
+        },
+        "requiredDocumentTypes": ["id_card"],
+        "rejectionReason": null,
+        "resubmissionBlocked": false,
+        "submittedAt": "2026-07-31T14:02:51.007Z",
+        "canSubmit": false,
+        "createdAt": "2026-07-31T10:24:08.412Z"
+      }
+    }
+  },
+
+  "overviewChangesRequestedDocument": {
+    "_note": "Le motif porte sur un justificatif : `documents` redevient faux, donc `canSubmit` aussi. Le redépôt fera repartir le dossier TOUT SEUL (P7) — pas de bouton Re-soumettre à afficher.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "e7a41f9c-2b6d-4c83-9f05-8a1b2c3d4e5f",
+        "publicName": "Koffi Électricité Générale",
+        "bio": "Électricien depuis 8 ans à Abidjan. Installation, dépannage, mise aux normes.",
+        "experienceYears": 8,
+        "validationStatus": "changes_requested",
+        "availabilityStatus": "available",
+        "score": 0,
+        "reviewsCount": 0,
+        "checklist": {
+          "profile": true,
+          "services": true,
+          "zones": true,
+          "availabilities": true,
+          "documents": false
+        },
+        "requiredDocumentTypes": ["id_card"],
+        "rejectionReason": "Votre pièce d'identité est illisible : redéposez une photo nette du recto.",
+        "resubmissionBlocked": false,
+        "submittedAt": "2026-07-31T14:02:51.007Z",
+        "canSubmit": false,
+        "createdAt": "2026-07-31T10:24:08.412Z"
+      }
+    }
+  },
+
+  "overviewChangesRequestedBio": {
+    "_note": "Le motif porte sur la présentation : checklist complète, `canSubmit` vrai — le prestataire corrige puis appuie sur Re-soumettre.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "e7a41f9c-2b6d-4c83-9f05-8a1b2c3d4e5f",
+        "publicName": "Koffi Électricité Générale",
+        "bio": "Électricien depuis 8 ans à Abidjan. Installation, dépannage, mise aux normes.",
+        "experienceYears": 8,
+        "validationStatus": "changes_requested",
+        "availabilityStatus": "available",
+        "score": 0,
+        "reviewsCount": 0,
+        "checklist": {
+          "profile": true,
+          "services": true,
+          "zones": true,
+          "availabilities": true,
+          "documents": true
+        },
+        "requiredDocumentTypes": ["id_card"],
+        "rejectionReason": "Votre présentation est trop vague : précisez vos prestations et votre expérience.",
+        "resubmissionBlocked": false,
+        "submittedAt": "2026-07-31T14:02:51.007Z",
+        "canSubmit": true,
+        "createdAt": "2026-07-31T10:24:08.412Z"
+      }
+    }
+  },
+
+  "overviewRejected": {
+    "_note": "Écart n°8 clos : refusé mais re-soumission ouverte — mêmes corrections que changes_requested.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "e7a41f9c-2b6d-4c83-9f05-8a1b2c3d4e5f",
+        "publicName": "Koffi Électricité Générale",
+        "bio": "Électricien depuis 8 ans à Abidjan. Installation, dépannage, mise aux normes.",
+        "experienceYears": 8,
+        "validationStatus": "rejected",
+        "availabilityStatus": "available",
+        "score": 0,
+        "reviewsCount": 0,
+        "checklist": {
+          "profile": true,
+          "services": true,
+          "zones": true,
+          "availabilities": true,
+          "documents": true
+        },
+        "requiredDocumentTypes": ["id_card"],
+        "rejectionReason": "Le dossier ne correspond pas aux critères d'admission de la plateforme.",
+        "resubmissionBlocked": false,
+        "submittedAt": "2026-07-31T14:02:51.007Z",
+        "canSubmit": true,
+        "createdAt": "2026-07-31T10:24:08.412Z"
+      }
+    }
+  },
+
+  "overviewRejectedBlocked": {
+    "_note": "`resubmissionBlocked` : bouton absent DÉFINITIVEMENT, contact support seul.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "e7a41f9c-2b6d-4c83-9f05-8a1b2c3d4e5f",
+        "publicName": "Koffi Électricité Générale",
+        "bio": "Électricien depuis 8 ans à Abidjan. Installation, dépannage, mise aux normes.",
+        "experienceYears": 8,
+        "validationStatus": "rejected",
+        "availabilityStatus": "available",
+        "score": 0,
+        "reviewsCount": 0,
+        "checklist": {
+          "profile": true,
+          "services": true,
+          "zones": true,
+          "availabilities": true,
+          "documents": true
+        },
+        "requiredDocumentTypes": ["id_card"],
+        "rejectionReason": "Dossier frauduleux présumé.",
+        "resubmissionBlocked": true,
+        "submittedAt": "2026-07-31T14:02:51.007Z",
+        "canSubmit": false,
+        "createdAt": "2026-07-31T10:24:08.412Z"
+      }
+    }
+  },
+
+  "overviewApproved": {
+    "_note": "Capture réelle (compte démo). Approuvé avec `documents` FAUX et `canSubmit` FAUX : il n'y a rien à re-soumettre — le bouton se pilote sur `canSubmit`, pas sur la checklist.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "bb1397e8-ff8f-4142-a9f9-b0a0d07dfa5c",
+        "publicName": "PRESTGO Demo — Plomberie Express",
+        "bio": "Compte de démonstration déjà approuvé, pour tester le parcours de réservation sans passer par la validation manuelle.",
+        "experienceYears": 6,
+        "validationStatus": "approved",
+        "availabilityStatus": "available",
+        "score": 4.5,
+        "reviewsCount": 12,
+        "checklist": {
+          "profile": true,
+          "services": true,
+          "zones": true,
+          "availabilities": true,
+          "documents": false
+        },
+        "requiredDocumentTypes": ["id_card"],
+        "rejectionReason": null,
+        "resubmissionBlocked": false,
+        "submittedAt": null,
+        "canSubmit": false,
+        "createdAt": "2026-07-29T16:03:32.866Z"
+      }
+    }
+  },
+
+  "overviewSuspended": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": {
+        "id": "e7a41f9c-2b6d-4c83-9f05-8a1b2c3d4e5f",
+        "publicName": "Koffi Électricité Générale",
+        "bio": "Électricien depuis 8 ans à Abidjan. Installation, dépannage, mise aux normes.",
+        "experienceYears": 8,
+        "validationStatus": "suspended",
+        "availabilityStatus": "unavailable",
+        "score": 3.2,
+        "reviewsCount": 5,
+        "checklist": {
+          "profile": true,
+          "services": true,
+          "zones": true,
+          "availabilities": true,
+          "documents": true
+        },
+        "requiredDocumentTypes": ["id_card"],
+        "rejectionReason": null,
+        "resubmissionBlocked": false,
+        "submittedAt": "2026-07-31T14:02:51.007Z",
+        "canSubmit": false,
+        "createdAt": "2026-07-31T10:24:08.412Z"
+      }
+    }
+  },
+
+  "patched": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Profil mis à jour",
+      "data": {
+        "id": "e7a41f9c-2b6d-4c83-9f05-8a1b2c3d4e5f",
+        "publicName": "Koffi Électricité & Domotique",
+        "bio": "Électricien depuis 8 ans à Abidjan. Installation, dépannage, mise aux normes, domotique.",
+        "experienceYears": 8,
+        "validationStatus": "profile_incomplete",
+        "availabilityStatus": "available",
+        "score": 0,
+        "reviewsCount": 0,
+        "checklist": {
+          "profile": true,
+          "services": false,
+          "zones": true,
+          "availabilities": false,
+          "documents": false
+        },
+        "requiredDocumentTypes": ["id_card"],
+        "rejectionReason": null,
+        "resubmissionBlocked": false,
+        "submittedAt": null,
+        "canSubmit": false,
+        "createdAt": "2026-07-31T10:24:08.412Z"
+      }
+    }
+  },
+
+  "lockedInReview": {
+    "_note": "Verrou de `pending_review` (provider-self.service.ts:78-86) : dès que le corps contient publicName, bio, experienceYears ou avatarFileId. `availabilityStatus` SEUL passe toujours.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Votre dossier est en cours de vérification : il n'est plus modifiable",
+      "errors": [],
+      "meta": { "correlationId": "dd440055-6677-4889-8aab-ccddeeff0043" }
+    }
+  },
+
+  "availabilityPatched": {
+    "_note": "PATCH { availabilityStatus } seul, accepté même en pending_review — interrupteur d'exploitation, sans rapport avec la décision.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Disponibilité mise à jour",
+      "data": {
+        "id": "e7a41f9c-2b6d-4c83-9f05-8a1b2c3d4e5f",
+        "publicName": "Koffi Électricité Générale",
+        "bio": "Électricien depuis 8 ans à Abidjan. Installation, dépannage, mise aux normes.",
+        "experienceYears": 8,
+        "validationStatus": "pending_review",
+        "availabilityStatus": "busy",
+        "score": 0,
+        "reviewsCount": 0,
+        "checklist": {
+          "profile": true,
+          "services": true,
+          "zones": true,
+          "availabilities": true,
+          "documents": true
+        },
+        "requiredDocumentTypes": ["id_card"],
+        "rejectionReason": null,
+        "resubmissionBlocked": false,
+        "submittedAt": "2026-07-31T14:02:51.007Z",
+        "canSubmit": false,
+        "createdAt": "2026-07-31T10:24:08.412Z"
+      }
+    }
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "_source": "GET/POST/DELETE /me/favorites — favorites.service.ts",
+  "_note": "Un prestataire suspendu APRÈS coup **reste** dans la liste, avec `available: false`. Le faire disparaître serait pire : le client croirait avoir perdu son favori (FR-021).",
+
+  "list": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "p-4c8e1a05-7b3d-4f62-9e08-1a5c7d9e0b3f",
+          "publicName": "Adjoua Plomberie",
+          "bio": "Quinze ans de métier à Abidjan.",
+          "score": 4.8,
+          "reviewsCount": 12,
+          "categories": ["Plomberie"],
+          "available": true,
+          "favoritedAt": "2026-07-02T10:15:00.000Z"
+        },
+        {
+          "_note": "Devenu non réservable : grisé à l'écran, jamais masqué.",
+          "id": "p-5d9f2b16-8c4e-4073-af19-2b6d8e0f1c40",
+          "publicName": "Kofi Services",
+          "bio": null,
+          "score": 0,
+          "reviewsCount": 0,
+          "categories": ["Plomberie", "Électricité"],
+          "available": false,
+          "favoritedAt": "2026-06-28T08:40:00.000Z"
+        }
+      ]
+    }
+  },
+
+  "empty": {
+    "status": 200,
+    "body": { "success": true, "message": "OK", "data": [] }
+  },
+
+  "added": {
+    "_note": "Idempotent : rappuyer sur le cœur ne produit jamais d'erreur.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Prestataire ajouté aux favoris",
+      "data": { "favorited": true }
+    }
+  },
+
+  "removed": {
+    "_note": "Idempotent lui aussi : retirer un favori absent est un succès.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Prestataire retiré des favoris",
+      "data": { "favorited": false }
+    }
+  },
+
+  "ownAccount": {
+    "_note": "Un prestataire ne se met pas lui-même en favori. L'application le devance en masquant le cœur sur sa propre fiche.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Vous ne pouvez pas vous ajouter à vos propres favoris",
+      "errors": [],
+      "meta": { "correlationId": "229933aa-44bb-45cc-86dd-778899aabbcc" }
+    }
+  },
+
+  "notApproved": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Ce prestataire n'est pas encore validé",
+      "errors": [],
+      "meta": { "correlationId": "33aa44bb-55cc-46dd-87ee-8899aabbccdd" }
+    }
+  }
+}

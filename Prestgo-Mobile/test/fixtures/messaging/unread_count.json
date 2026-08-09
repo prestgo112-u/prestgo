@@ -1,0 +1,31 @@
+{
+  "_source": "GET /me/threads/unread-count — §3.11 du cahier des charges (écart n°4 clos), capture réelle.",
+  "_note": "Compte GLOBAL, tous fils confondus, somme exacte des `unreadCount` de /me/threads. Mes propres messages ne comptent jamais comme non lus.",
+
+  "three": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": { "unread": 3 }
+    }
+  },
+
+  "one": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": { "unread": 1 }
+    }
+  },
+
+  "zero": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": { "unread": 0 }
+    }
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "_source": "GET/PUT /providers/me/availabilities — §2.2 P6 du cahier des charges (availability/dto.ts:32-54).",
+  "_note": "Les heures sont des CHAÎNES « HH:MM », interprétées en UTC par le service et JAMAIS converties dans le fuseau de l'appareil. `weekday` : 0 = dimanche, 6 = samedi. La lecture est le miroir exact de l'écriture. Chevauchement et ordre des heures sont contrôlés côté service avec des messages non contractualisés → reproduire les deux règles côté client.",
+
+  "mirror": {
+    "_note": "GET — miroir du dernier PUT.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a8b",
+          "weekday": 1,
+          "startTime": "08:00",
+          "endTime": "12:00",
+          "active": true
+        },
+        {
+          "id": "6f7a8b9c-0d1e-4f2a-8b3c-4d5e6f7a8b9c",
+          "weekday": 1,
+          "startTime": "14:00",
+          "endTime": "18:00",
+          "active": true
+        },
+        {
+          "id": "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d",
+          "weekday": 2,
+          "startTime": "08:00",
+          "endTime": "18:00",
+          "active": true
+        }
+      ]
+    }
+  },
+
+  "mirrorEmpty": {
+    "status": 200,
+    "body": { "success": true, "message": "OK", "data": [] }
+  },
+
+  "replaced": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Disponibilités mises à jour",
+      "data": [
+        {
+          "id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a8b",
+          "weekday": 1,
+          "startTime": "08:00",
+          "endTime": "12:00",
+          "active": true
+        },
+        {
+          "id": "6f7a8b9c-0d1e-4f2a-8b3c-4d5e6f7a8b9c",
+          "weekday": 1,
+          "startTime": "14:00",
+          "endTime": "18:00",
+          "active": true
+        },
+        {
+          "id": "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d",
+          "weekday": 2,
+          "startTime": "08:00",
+          "endTime": "18:00",
+          "active": true
+        }
+      ]
+    }
+  },
+
+  "invalid": {
+    "_note": "Message serveur des trois refus métier — non contractualisé dans Swagger, d'où les contrôles locaux.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Jour hors 0-6, heure de fin avant l'heure de début, ou créneaux qui se chevauchent",
+      "errors": [],
+      "meta": { "correlationId": "55cc00dd-eeff-4007-8223-445566778bc1" }
+    }
+  },
+
+  "badTimeFormat": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "L'heure de début doit être au format HH:MM",
+      "errors": [
+        {
+          "field": "slots.0.startTime",
+          "code": "invalid_string",
+          "message": "L'heure de début doit être au format HH:MM"
+        }
+      ],
+      "meta": { "correlationId": "66dd00ee-ff00-4118-8334-556677889cd2" }
+    }
+  },
+
+  "tooManySlots": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Un agenda hebdomadaire ne peut pas dépasser 50 créneaux",
+      "errors": [
+        {
+          "field": "slots",
+          "code": "too_big",
+          "message": "Un agenda hebdomadaire ne peut pas dépasser 50 créneaux"
+        }
+      ],
+      "meta": { "correlationId": "77ee00ff-0011-4229-8445-66778899ade3" }
+    }
+  }
+}

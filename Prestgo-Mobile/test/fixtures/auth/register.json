@@ -1,0 +1,88 @@
+{
+  "_source": "POST /auth/register — auth.controller.ts:69, account.service.ts:65",
+  "_note": "Le compte naît au statut `pending` : il existe mais ne peut pas se connecter tant qu'un code n'a pas été vérifié.",
+
+  "created": {
+    "status": 201,
+    "body": {
+      "success": true,
+      "message": "Compte créé. Vérifiez votre téléphone ou votre email pour l'activer.",
+      "data": {
+        "id": "9f1c2b7e-3d54-4a10-9b6e-2c7d8e5f4a31",
+        "email": "nouveau.client@prestgo.test",
+        "phone": null,
+        "status": "pending",
+        "createdAt": "2026-07-31T09:12:44.318Z"
+      }
+    }
+  },
+
+  "createdByPhone": {
+    "status": 201,
+    "body": {
+      "success": true,
+      "message": "Compte créé. Vérifiez votre téléphone ou votre email pour l'activer.",
+      "data": {
+        "id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+        "email": null,
+        "phone": "+2250700000042",
+        "status": "pending",
+        "createdAt": "2026-07-31T09:14:02.771Z"
+      }
+    }
+  },
+
+  "invalidFields": {
+    "_note": "validationExceptionFactory : `message` reprend le premier de la liste, `errors[].field` porte le chemin complet du champ.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Adresse email invalide",
+      "errors": [
+        {
+          "field": "email",
+          "code": "validation_error",
+          "message": "Adresse email invalide"
+        },
+        {
+          "field": "password",
+          "code": "validation_error",
+          "message": "Le mot de passe doit contenir au moins 8 caractères, dont une lettre et un chiffre"
+        }
+      ],
+      "meta": { "correlationId": "3b8f0c21-6d4e-4f19-a0b3-77c1e9d24f58" }
+    }
+  },
+
+  "missingContact": {
+    "_note": "Erreur métier posée à la main : aucun `field`, la bannière du formulaire porte le message.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Un email ou un numéro de téléphone est obligatoire",
+      "errors": [],
+      "meta": { "correlationId": "5c9d1e33-7a2b-4c8f-91d6-4e3a2b1c0d9f" }
+    }
+  },
+
+  "duplicate": {
+    "status": 409,
+    "body": {
+      "success": false,
+      "message": "Un compte existe déjà avec cet email ou ce numéro",
+      "errors": [],
+      "meta": { "correlationId": "7e4a5b6c-8d9e-4f01-a2b3-c4d5e6f70819" }
+    }
+  },
+
+  "rateLimited": {
+    "_note": "5 inscriptions par minute et par IP (THROTTLE_SENSITIVE).",
+    "status": 429,
+    "body": {
+      "success": false,
+      "message": "Trop de tentatives en peu de temps. Merci de réessayer dans une minute.",
+      "errors": [],
+      "meta": { "correlationId": "a1b2c3d4-e5f6-4708-99aa-bbccddeeff00" }
+    }
+  }
+}

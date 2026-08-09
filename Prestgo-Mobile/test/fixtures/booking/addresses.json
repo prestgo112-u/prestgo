@@ -1,0 +1,159 @@
+{
+  "_source": "GET/POST/PATCH/DELETE /me/addresses et POST /me/addresses/{id}/default — addresses.service.ts",
+  "_note": "Deux particularités à ne pas manquer : `POST .../default` renvoie **la liste complète à jour** (économie d'un appel), et `DELETE` a **deux formes de succès** — retrait réel, ou archivage quand l'adresse documente une mission passée.",
+
+  "list": {
+    "_note": "Adresse par défaut en tête, comme le service la trie.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "addr-b1111111-1111-4111-8111-111111111111",
+          "label": "Domicile",
+          "city": "Abidjan",
+          "commune": "Cocody",
+          "details": "Rue des Jardins, villa 12",
+          "latitude": 5.35,
+          "longitude": -3.98,
+          "isDefault": true,
+          "createdAt": "2026-06-02T09:00:00.000Z"
+        },
+        {
+          "id": "addr-b1111111-1111-4111-8111-222222222222",
+          "label": "Bureau",
+          "city": "Abidjan",
+          "commune": "Plateau",
+          "details": null,
+          "latitude": 5.32,
+          "longitude": -4.02,
+          "isDefault": false,
+          "createdAt": "2026-06-15T11:30:00.000Z"
+        }
+      ]
+    }
+  },
+
+  "empty": {
+    "_note": "Carnet vide : la réservation renvoie vers la création plutôt que vers une étape sans choix.",
+    "status": 200,
+    "body": { "success": true, "message": "OK", "data": [] }
+  },
+
+  "created": {
+    "_note": "La PREMIÈRE adresse devient automatiquement l'adresse par défaut.",
+    "status": 201,
+    "body": {
+      "success": true,
+      "message": "Adresse enregistrée",
+      "data": {
+        "id": "addr-b1111111-1111-4111-8111-333333333333",
+        "label": "Chez ma mère",
+        "city": "Abidjan",
+        "commune": "Yopougon",
+        "details": null,
+        "latitude": 5.34,
+        "longitude": -4.07,
+        "isDefault": true,
+        "createdAt": "2026-08-01T08:00:00.000Z"
+      }
+    }
+  },
+
+  "capacityReached": {
+    "_note": "Plafond de 10. L'application rend l'ajout indisponible AVANT d'atteindre ce refus (FR-020) ; ce cas reste vérifié parce que le carnet peut avoir grandi sur un autre appareil.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Vous ne pouvez pas enregistrer plus de 10 adresses",
+      "errors": [],
+      "meta": { "correlationId": "ff660077-1188-4299-83aa-445566778899" }
+    }
+  },
+
+  "missingCoordinates": {
+    "_note": "Une adresse sans position est inutilisable : elle ne peut pas servir de lieu d'intervention.",
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "La latitude est obligatoire",
+      "errors": [
+        {
+          "field": "latitude",
+          "code": "validation_error",
+          "message": "La latitude est obligatoire"
+        }
+      ],
+      "meta": { "correlationId": "00771188-2299-43aa-84bb-556677889900" }
+    }
+  },
+
+  "defaultChanged": {
+    "_note": "⚠️ La réponse est la LISTE, pas l'adresse : elle alimente l'écran directement.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Adresse par défaut mise à jour",
+      "data": [
+        {
+          "id": "addr-b1111111-1111-4111-8111-222222222222",
+          "label": "Bureau",
+          "city": "Abidjan",
+          "commune": "Plateau",
+          "details": null,
+          "latitude": 5.32,
+          "longitude": -4.02,
+          "isDefault": true,
+          "createdAt": "2026-06-15T11:30:00.000Z"
+        },
+        {
+          "id": "addr-b1111111-1111-4111-8111-111111111111",
+          "label": "Domicile",
+          "city": "Abidjan",
+          "commune": "Cocody",
+          "details": "Rue des Jardins, villa 12",
+          "latitude": 5.35,
+          "longitude": -3.98,
+          "isDefault": false,
+          "createdAt": "2026-06-02T09:00:00.000Z"
+        }
+      ]
+    }
+  },
+
+  "removed": {
+    "_note": "Première forme de succès : l'adresse est réellement supprimée.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Adresse supprimée",
+      "data": { "removed": true, "archived": false }
+    }
+  },
+
+  "archived": {
+    "_note": "Seconde forme de succès : l'adresse documente une mission passée, elle est détachée du carnet mais conservée. Le message diffère, pas le succès.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Adresse archivée",
+      "data": {
+        "removed": false,
+        "archived": true,
+        "reason": "Adresse conservée car utilisée par des missions passées"
+      }
+    }
+  },
+
+  "notFound": {
+    "_note": "404 et non 403 : révéler qu'une adresse existe chez quelqu'un d'autre serait déjà une fuite.",
+    "status": 404,
+    "body": {
+      "success": false,
+      "message": "Adresse introuvable",
+      "errors": [],
+      "meta": { "correlationId": "11882299-33aa-44bb-85cc-66778899aabb" }
+    }
+  }
+}

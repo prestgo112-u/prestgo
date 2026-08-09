@@ -1,0 +1,141 @@
+{
+  "_source": "GET /me/notifications — §3.10 du cahier des charges. Paramètres : page, limit (≤ 100), sort, et unread=true|false (transformé explicitement côté serveur).",
+  "_note": "Élément : { id, type, title, body, data, readAt, createdAt }. `data` est la charge utile de routage — la MÊME que celle d'un push (contracts/push-payloads.md). L'état vide est une capture réelle du compte démo.",
+
+  "firstPage": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "n-1",
+          "type": "mission.accepted",
+          "title": "Mission acceptée",
+          "body": "Kofi Plomberie a accepté votre demande du 3 août.",
+          "data": {
+            "type": "mission",
+            "missionId": "b86332d9-14a0-4ec8-b5d0-d0158ae1824d"
+          },
+          "readAt": null,
+          "createdAt": "2026-07-30T09:15:22.480Z"
+        },
+        {
+          "id": "n-2",
+          "type": "chat.message",
+          "title": "Nouveau message",
+          "body": "Kofi Plomberie : Bonjour, à quelle heure passez-vous ?",
+          "data": {
+            "type": "chat",
+            "missionId": "b86332d9-14a0-4ec8-b5d0-d0158ae1824d",
+            "threadId": "e6499753-89c6-4a9f-bdc9-b3ff4508be47"
+          },
+          "readAt": null,
+          "createdAt": "2026-07-30T08:41:03.112Z"
+        },
+        {
+          "id": "n-3",
+          "type": "mission.reschedule.requested",
+          "title": "Demande de report",
+          "body": "Kofi Plomberie propose de reporter la mission du 3 août.",
+          "data": {
+            "type": "reschedule",
+            "missionId": "b86332d9-14a0-4ec8-b5d0-d0158ae1824d",
+            "rescheduleId": "r-77"
+          },
+          "readAt": "2026-07-29T18:02:44.905Z",
+          "createdAt": "2026-07-29T17:55:10.330Z"
+        },
+        {
+          "id": "n-4",
+          "type": "review.received",
+          "title": "Nouvel avis",
+          "body": "Awa Client a laissé un avis sur votre mission.",
+          "data": {
+            "type": "review",
+            "missionId": "c9744fd0-25c2-4e0a-b6e2-e2169cf2935e",
+            "reviewId": "rev-12"
+          },
+          "readAt": "2026-07-28T10:20:00.000Z",
+          "createdAt": "2026-07-28T10:12:51.207Z"
+        },
+        {
+          "id": "n-5",
+          "type": "promo.summer",
+          "title": "Offre d'été",
+          "body": "Un type inconnu de cette version de l'application.",
+          "data": { "type": "promo" },
+          "readAt": null,
+          "createdAt": "2026-07-27T07:30:00.000Z"
+        }
+      ],
+      "meta": { "page": 1, "limit": 20, "total": 5 }
+    }
+  },
+
+  "unreadOnly": {
+    "_note": "?unread=true — seules les non-lues.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [
+        {
+          "id": "n-1",
+          "type": "mission.accepted",
+          "title": "Mission acceptée",
+          "body": "Kofi Plomberie a accepté votre demande du 3 août.",
+          "data": {
+            "type": "mission",
+            "missionId": "b86332d9-14a0-4ec8-b5d0-d0158ae1824d"
+          },
+          "readAt": null,
+          "createdAt": "2026-07-30T09:15:22.480Z"
+        },
+        {
+          "id": "n-2",
+          "type": "chat.message",
+          "title": "Nouveau message",
+          "body": "Kofi Plomberie : Bonjour, à quelle heure passez-vous ?",
+          "data": {
+            "type": "chat",
+            "missionId": "b86332d9-14a0-4ec8-b5d0-d0158ae1824d",
+            "threadId": "e6499753-89c6-4a9f-bdc9-b3ff4508be47"
+          },
+          "readAt": null,
+          "createdAt": "2026-07-30T08:41:03.112Z"
+        },
+        {
+          "id": "n-5",
+          "type": "promo.summer",
+          "title": "Offre d'été",
+          "body": "Un type inconnu de cette version de l'application.",
+          "data": { "type": "promo" },
+          "readAt": null,
+          "createdAt": "2026-07-27T07:30:00.000Z"
+        }
+      ],
+      "meta": { "page": 1, "limit": 20, "total": 3 }
+    }
+  },
+
+  "empty": {
+    "_note": "Capture réelle du compte démo : data [] et meta présents.",
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "OK",
+      "data": [],
+      "meta": { "page": 1, "limit": 2, "total": 0 }
+    }
+  },
+
+  "badUnreadParam": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "« unread » doit valoir true ou false",
+      "meta": { "correlationId": "corr-us7-400-unread" }
+    }
+  }
+}
