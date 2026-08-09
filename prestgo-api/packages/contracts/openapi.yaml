@@ -1,0 +1,782 @@
+openapi: 3.1.0
+info:
+  title: PRESTGO Back-office Admin and Backend Services
+  version: 1.0.0
+  description: Versioned contract for PRESTGO V1 backend and internal admin back-office workflows.
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth
+  - name: Admin Dashboard
+  - name: Admin Users
+  - name: Roles
+  - name: Providers
+  - name: Catalog
+  - name: Zones
+  - name: Missions
+  - name: Messages
+  - name: Reviews
+  - name: Disputes
+  - name: Notifications
+  - name: Files
+  - name: Settings
+  - name: Audit
+  - name: Exports
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Sign in an internal or platform user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Authenticated session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh an access token
+      responses:
+        "200":
+          description: Refreshed session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: End current session
+      responses:
+        "204":
+          description: Session closed
+  /admin/dashboard/summary:
+    get:
+      tags: [Admin Dashboard]
+      summary: Get operational dashboard summary
+      responses:
+        "200":
+          description: Dashboard metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummaryResponse"
+  /admin/users:
+    get:
+      tags: [Admin Users]
+      summary: List users with filters
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Sort"
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/UserStatus"
+        - name: q
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Paginated users
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserListResponse"
+  /admin/users/{id}:
+    get:
+      tags: [Admin Users]
+      summary: Get user detail
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: User detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+  /admin/users/{id}/status:
+    patch:
+      tags: [Admin Users]
+      summary: Change user status
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusChangeRequest"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+  /admin/roles:
+    get:
+      tags: [Roles]
+      summary: List roles
+      responses:
+        "200":
+          description: Roles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleListResponse"
+    post:
+      tags: [Roles]
+      summary: Create role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleMutation"
+      responses:
+        "201":
+          description: Created role
+  /admin/permissions:
+    get:
+      tags: [Roles]
+      summary: List permissions
+      responses:
+        "200":
+          description: Permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PermissionListResponse"
+  /admin/providers:
+    get:
+      tags: [Providers]
+      summary: List providers
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
+        - name: validationStatus
+          in: query
+          schema:
+            $ref: "#/components/schemas/ProviderValidationStatus"
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: categoryId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Paginated providers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderListResponse"
+  /admin/providers/{id}:
+    get:
+      tags: [Providers]
+      summary: Get provider detail
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Provider detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderResponse"
+    patch:
+      tags: [Providers]
+      summary: Update admin-editable provider fields
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Updated provider
+  /admin/providers/{id}/status:
+    patch:
+      tags: [Providers]
+      summary: Change provider validation or availability status
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProviderStatusChangeRequest"
+      responses:
+        "200":
+          description: Updated provider status
+  /admin/verifications/documents/{id}/approve:
+    post:
+      tags: [Providers]
+      summary: Approve a provider document
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Document approved
+  /admin/verifications/documents/{id}/reject:
+    post:
+      tags: [Providers]
+      summary: Reject a provider document with reason
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReasonRequest"
+      responses:
+        "200":
+          description: Document rejected
+  /admin/categories:
+    get:
+      tags: [Catalog]
+      summary: List admin categories
+      responses:
+        "200":
+          description: Categories
+    post:
+      tags: [Catalog]
+      summary: Create category
+      responses:
+        "201":
+          description: Category created
+  /admin/zones:
+    get:
+      tags: [Zones]
+      summary: List admin zones
+      responses:
+        "200":
+          description: Zones
+    post:
+      tags: [Zones]
+      summary: Create zone
+      responses:
+        "201":
+          description: Zone created
+  /admin/missions:
+    get:
+      tags: [Missions]
+      summary: List missions
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/MissionStatus"
+        - name: city
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Paginated missions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MissionListResponse"
+  /admin/missions/{id}:
+    get:
+      tags: [Missions]
+      summary: Get mission detail
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Mission detail
+  /admin/missions/{id}/status:
+    patch:
+      tags: [Missions]
+      summary: Change mission status
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MissionStatusChangeRequest"
+      responses:
+        "200":
+          description: Mission updated
+  /admin/missions/{id}/reschedule:
+    post:
+      tags: [Missions]
+      summary: Reschedule mission
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Mission rescheduled
+  /admin/missions/{id}/cancel:
+    post:
+      tags: [Missions]
+      summary: Cancel mission with reason
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReasonRequest"
+      responses:
+        "200":
+          description: Mission cancelled
+  /admin/messages/threads:
+    get:
+      tags: [Messages]
+      summary: List message threads
+      responses:
+        "200":
+          description: Message threads
+  /admin/reviews:
+    get:
+      tags: [Reviews]
+      summary: List reviews
+      responses:
+        "200":
+          description: Reviews
+  /admin/reviews/{id}/status:
+    patch:
+      tags: [Reviews]
+      summary: Moderate review
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewModerationRequest"
+      responses:
+        "200":
+          description: Review moderated
+  /admin/disputes:
+    get:
+      tags: [Disputes]
+      summary: List disputes
+      responses:
+        "200":
+          description: Disputes
+  /disputes:
+    post:
+      tags: [Disputes]
+      summary: Open a dispute
+      responses:
+        "201":
+          description: Dispute opened
+  /admin/disputes/{id}/assign:
+    patch:
+      tags: [Disputes]
+      summary: Assign dispute
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Dispute assigned
+  /admin/disputes/{id}/status:
+    patch:
+      tags: [Disputes]
+      summary: Change dispute status
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisputeStatusChangeRequest"
+      responses:
+        "200":
+          description: Dispute updated
+  /admin/notifications:
+    get:
+      tags: [Notifications]
+      summary: List notifications
+      responses:
+        "200":
+          description: Notifications
+  /admin/notifications/send:
+    post:
+      tags: [Notifications]
+      summary: Send system notification
+      responses:
+        "202":
+          description: Notification queued
+  /files/upload:
+    post:
+      tags: [Files]
+      summary: Upload a file
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                visibility:
+                  $ref: "#/components/schemas/FileVisibility"
+      responses:
+        "201":
+          description: File uploaded
+  /files/{id}:
+    get:
+      tags: [Files]
+      summary: Download or view an authorized file
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: File content
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /admin/settings:
+    get:
+      tags: [Settings]
+      summary: List settings
+      responses:
+        "200":
+          description: Settings
+  /admin/settings/{key}:
+    patch:
+      tags: [Settings]
+      summary: Update setting
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Setting updated
+  /admin/audit-logs:
+    get:
+      tags: [Audit]
+      summary: List audit logs
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Audit logs
+  /admin/exports:
+    post:
+      tags: [Exports]
+      summary: Create export job
+      responses:
+        "202":
+          description: Export queued
+  /admin/exports/{id}:
+    get:
+      tags: [Exports]
+      summary: Get export job status
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Export status
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    Sort:
+      name: sort
+      in: query
+      schema:
+        type: string
+  responses:
+    Unauthorized:
+      description: Authentication required or invalid
+    Forbidden:
+      description: Permission denied
+  schemas:
+    ApiMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+    LoginRequest:
+      type: object
+      required: [identifier, password]
+      properties:
+        identifier:
+          type: string
+        password:
+          type: string
+          format: password
+    AuthResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          required: [accessToken, refreshToken, user]
+          properties:
+            accessToken:
+              type: string
+            refreshToken:
+              type: string
+            user:
+              $ref: "#/components/schemas/User"
+    UserStatus:
+      type: string
+      enum: [draft, pending, active, rejected, suspended, deleted]
+    ProviderValidationStatus:
+      type: string
+      enum: [profile_incomplete, pending_review, approved, changes_requested, rejected, suspended]
+    MissionStatus:
+      type: string
+      enum: [draft, pending_provider, confirmed, in_progress, completed, closed, cancelled, disputed]
+    DisputeStatus:
+      type: string
+      enum: [open, in_review, waiting_client, waiting_provider, resolved, rejected, closed]
+    ReviewStatus:
+      type: string
+      enum: [published, reported, hidden, rejected]
+    FileVisibility:
+      type: string
+      enum: [public, authenticated, restricted, sensitive]
+    User:
+      type: object
+      required: [id, status]
+      properties:
+        id:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+        status:
+          $ref: "#/components/schemas/UserStatus"
+        roles:
+          type: array
+          items:
+            type: string
+    Provider:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        publicName:
+          type: string
+        validationStatus:
+          $ref: "#/components/schemas/ProviderValidationStatus"
+        availabilityStatus:
+          type: string
+        score:
+          type: number
+    Mission:
+      type: object
+      properties:
+        id:
+          type: string
+        clientId:
+          type: string
+        providerId:
+          type: string
+        status:
+          $ref: "#/components/schemas/MissionStatus"
+        scheduledAt:
+          type: string
+          format: date-time
+    RoleMutation:
+      type: object
+      required: [code, name, permissions]
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+    StatusChangeRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+        reason:
+          type: string
+    ProviderStatusChangeRequest:
+      allOf:
+        - $ref: "#/components/schemas/StatusChangeRequest"
+    MissionStatusChangeRequest:
+      allOf:
+        - $ref: "#/components/schemas/StatusChangeRequest"
+    DisputeStatusChangeRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: "#/components/schemas/DisputeStatus"
+        reason:
+          type: string
+        decision:
+          type: string
+    ReviewModerationRequest:
+      type: object
+      required: [status, reason]
+      properties:
+        status:
+          $ref: "#/components/schemas/ReviewStatus"
+        reason:
+          type: string
+    ReasonRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+    DashboardSummaryResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            activeUsers:
+              type: integer
+            approvedProviders:
+              type: integer
+            pendingProviders:
+              type: integer
+            todayMissions:
+              type: integer
+            openDisputes:
+              type: integer
+            reviewsToModerate:
+              type: integer
+    UserResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: "#/components/schemas/User"
+    UserListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    ProviderResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: "#/components/schemas/Provider"
+    ProviderListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Provider"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    MissionListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Mission"
+        meta:
+          $ref: "#/components/schemas/ApiMeta"
+    RoleListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            type: object
+    PermissionListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            type: object

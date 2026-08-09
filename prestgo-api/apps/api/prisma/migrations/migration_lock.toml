@@ -1,0 +1,4 @@
+# Ce fichier est géré par Prisma. Il fixe le moteur de base de données visé par
+# le dossier `migrations/` — le committer évite qu'un environnement applique par
+# erreur ces migrations sur un autre SGBD.
+provider = "postgresql"

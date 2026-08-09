@@ -1,0 +1,999 @@
+generator client {
+  provider = "prisma-client-js"
+  // À réactiver en US4 (zones géographiques) : previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // PostGIS est nécessaire seulement pour les zones (US4). Désactivé pour l'instant
+  // afin de pouvoir démarrer sans installer l'extension PostGIS.
+  // extensions = [postgis(map: "postgis")]
+}
+
+enum UserStatus {
+  draft
+  pending
+  active
+  rejected
+  suspended
+  deleted
+}
+
+enum FileVisibility {
+  public
+  authenticated
+  restricted
+  sensitive
+}
+
+// Étapes de validation d'un prestataire (voir data-model.md).
+enum ProviderValidationStatus {
+  profile_incomplete
+  pending_review
+  approved
+  changes_requested
+  rejected
+  suspended
+}
+
+// État d'un document fourni par un prestataire.
+enum DocumentStatus {
+  pending
+  approved
+  rejected
+}
+
+// Étapes de vie d'une mission (réservation d'un service).
+enum MissionStatus {
+  draft
+  pending_provider
+  confirmed
+  in_progress
+  completed
+  closed
+  cancelled
+  disputed
+}
+
+// Étapes de traitement d'un litige.
+enum DisputeStatus {
+  open
+  in_review
+  waiting_client
+  waiting_provider
+  resolved
+  rejected
+  closed
+}
+
+// États de modération d'un avis.
+enum ReviewStatus {
+  published
+  reported
+  hidden
+  rejected
+}
+
+// Suivi de traitement d'un signalement d'avis.
+enum ReportStatus {
+  pending
+  reviewed
+  dismissed
+}
+
+// Cycle de vie d'une demande de report de mission.
+// `applied` = report effectué directement par un administrateur.
+enum RescheduleStatus {
+  requested
+  accepted
+  rejected
+  applied
+}
+
+model User {
+  id              String       @id @default(uuid())
+  firstName       String?
+  lastName        String?
+  phone           String?      @unique
+  email           String?      @unique
+  passwordHash    String
+  status          UserStatus   @default(draft)
+  phoneVerifiedAt DateTime?
+  emailVerifiedAt DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  roles           UserRole[]
+  auditLogs       AuditLog[]   @relation("AuditActor")
+  files           File[]
+  providerProfile ProviderProfile?        @relation("UserProvider")
+  clientProfile   ClientProfile?          @relation("UserClient")
+  adminProfile    AdminProfile?           @relation("UserAdmin")
+  reviewedDocs    ProviderDocument[]      @relation("DocumentReviewer")
+  providerNotes   ProviderInternalNote[]  @relation("NoteAuthor")
+  clientMissions  Mission[]               @relation("ClientMissions")
+  addresses       Address[]
+  resetTokens     PasswordResetToken[]    @relation("UserResetTokens")
+  // Lot 4 : les colonnes qui référençaient un utilisateur sans contrainte
+  // sont désormais de vraies relations. `onDelete: SetNull` conserve
+  // l'historique même si un compte disparaît.
+  sentMessages    ChatMessage[]           @relation("MessageSender")
+  authoredReviews Review[]                @relation("ReviewAuthor")
+  receivedReviews Review[]                @relation("ReviewTarget")
+  reviewReports   ReviewReport[]          @relation("ReportAuthor")
+  openedDisputes  Dispute[]               @relation("DisputeOpener")
+  assignedDisputes Dispute[]              @relation("DisputeAssignee")
+  disputeMessages DisputeMessage[]        @relation("DisputeMessageSender")
+  statusChanges   MissionStatusHistory[]  @relation("StatusChangeAuthor")
+  reschedules     MissionReschedule[]     @relation("RescheduleAuthor")
+  cancellations   MissionCancellation[]   @relation("CancellationAuthor")
+  notifications   Notification[]          @relation("NotificationRecipient")
+  exportRequests  ExportJob[]             @relation("ExportRequester")
+  settingUpdates  SystemSetting[]         @relation("SettingUpdater")
+  // Lot 6 : surface mobile.
+  favorites       ClientFavorite[]        @relation("FavoriteClient")
+  devices         DeviceToken[]           @relation("UserDevices")
+  refreshSessions RefreshSession[]        @relation("UserRefreshSessions")
+  idempotencyKeys IdempotencyRecord[]     @relation("IdempotencyOwner")
+  rescheduleDecisions MissionReschedule[] @relation("RescheduleDecider")
+
+  @@index([status])
+  // Le back-office trie les utilisateurs par date d'inscription.
+  @@index([createdAt])
+}
+
+model Role {
+  id          String           @id @default(uuid())
+  code        String           @unique
+  name        String
+  description String?
+  isSystem    Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  users       UserRole[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  code        String           @unique
+  module      String
+  action      String
+  description String?
+  roles       RolePermission[]
+
+  @@unique([module, action])
+}
+
+model UserRole {
+  userId String
+  roleId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  oldValue  Json?
+  newValue  Json?
+  ip        String?
+  createdAt DateTime @default(now())
+  actor     User?    @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([entity, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+}
+
+model File {
+  id           String         @id @default(uuid())
+  ownerId      String?
+  originalName String
+  mimeType     String
+  size         Int
+  storageKey   String         @unique
+  visibility   FileVisibility @default(restricted)
+  createdAt    DateTime       @default(now())
+  disabledAt   DateTime?
+  owner        User?          @relation(fields: [ownerId], references: [id])
+  providerDocs ProviderDocument[]
+  portfolio    ProviderPortfolioItem[] @relation("PortfolioFile")
+  messageFiles ChatMessageFile[]       @relation("MessageFile")
+  disputeFiles DisputeFile[]           @relation("DisputeEvidence")
+  categoryIcons CatalogCategory[]      @relation("CategoryIcon")
+  exportJobs   ExportJob[]             @relation("ExportFile")
+  clientAvatars ClientProfile[]        @relation("ClientAvatar")
+  providerAvatars ProviderProfile[]    @relation("ProviderAvatar")
+
+  @@index([ownerId])
+  @@index([visibility])
+}
+
+// Jeton de réinitialisation de mot de passe.
+//
+// On ne stocke QUE l'empreinte du jeton, jamais sa valeur en clair : si la base
+// fuitait, les jetons volés seraient inutilisables. Le jeton envoyé à
+// l'utilisateur n'existe donc nulle part côté serveur.
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation("UserResetTokens", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// Session de rafraîchissement (un refresh token = une session).
+//
+// Jusqu'au Lot 6, les refresh tokens étaient de purs JWT : rien côté serveur ne
+// permettait de les invalider. Or changer son mot de passe doit couper toutes
+// les autres sessions (§3) — c'est la réaction attendue quand on soupçonne que
+// son compte est compromis. Sans cette table, un jeton volé restait valable
+// sept jours quoi qu'il arrive.
+//
+// Comme pour les jetons de réinitialisation, seule l'empreinte est stockée.
+model RefreshSession {
+  id           String    @id @default(uuid())
+  userId       String
+  tokenHash    String    @unique
+  /// Contexte de la session, pour que l'utilisateur reconnaisse ses appareils.
+  userAgent    String?
+  ip           String?
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  lastUsedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  user         User      @relation("UserRefreshSessions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// Trace d'une requête idempotente (§14.6).
+//
+// `POST /missions` peut être rejoué par une application mobile qui a perdu le
+// réseau au mauvais moment. Rejouer la même clé doit renvoyer la MÊME mission,
+// pas en créer une seconde.
+model IdempotencyRecord {
+  id         String   @id @default(uuid())
+  userId     String
+  key        String
+  endpoint   String
+  /// Identifiant de la ressource créée au premier appel.
+  resourceId String?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  user       User     @relation("IdempotencyOwner", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint, key])
+  @@index([expiresAt])
+}
+
+// Jeton d'appareil pour les notifications push (FCM / APNs).
+//
+// `token` est unique : un même appareil réinstallé et reconnecté avec un autre
+// compte doit être RÉAFFECTÉ, pas dupliqué — sinon l'ancien propriétaire
+// continuerait de recevoir les notifications du nouveau.
+model DeviceToken {
+  id         String   @id @default(uuid())
+  userId     String
+  platform   String   // android | ios | web
+  token      String   @unique
+  active     Boolean  @default(true)
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  user       User     @relation("UserDevices", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([active])
+}
+
+// Prestataire mis en favori par un client.
+model ClientFavorite {
+  clientId   String
+  providerId String
+  createdAt  DateTime        @default(now())
+  client     User            @relation("FavoriteClient", fields: [clientId], references: [id], onDelete: Cascade)
+  provider   ProviderProfile @relation("FavoriteProvider", fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@id([clientId, providerId])
+  @@index([providerId])
+}
+
+// Code à usage unique envoyé par SMS ou email (OTP).
+//
+// Même principe : seule l'empreinte est stockée. `attempts` limite le nombre
+// d'essais pour qu'un code à 6 chiffres ne puisse pas être deviné par force brute.
+model OtpCode {
+  id        String    @id @default(uuid())
+  // Destinataire : numéro de téléphone ou email selon le canal.
+  target    String
+  purpose   String    @default("phone_verification")
+  codeHash  String
+  attempts  Int       @default(0)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([target, purpose])
+  @@index([expiresAt])
+}
+
+// Informations internes d'un membre des équipes PRESTGO (CDC §7 : `admin_profiles`).
+model AdminProfile {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  jobTitle   String?
+  department String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation("UserAdmin", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([isActive])
+}
+
+// Profil d'un client (celui qui commande une prestation).
+// Lot 2 : sert surtout à porter les informations internes au back-office
+// (note du support, adresse par défaut). Un utilisateur peut commander une
+// mission sans profil ; celui-ci est créé au besoin.
+model ClientProfile {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  avatarFileId     String?
+  defaultAddressId String?
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation("UserClient", fields: [userId], references: [id], onDelete: Cascade)
+  // Lot 6 : ces deux colonnes portaient déjà une clé étrangère en base, mais
+  // le schéma ne les déclarait pas — elles étaient de simples textes pour
+  // Prisma. La bascule vers les migrations versionnées (§15.1) rendait cet
+  // écart visible : sans ces relations, la première migration aurait SUPPRIMÉ
+  // les contraintes existantes pour « aligner » la base sur le schéma.
+  avatarFile       File?    @relation("ClientAvatar", fields: [avatarFileId], references: [id], onDelete: SetNull)
+  defaultAddress   Address? @relation("ClientDefaultAddress", fields: [defaultAddressId], references: [id], onDelete: SetNull)
+
+  @@index([avatarFileId])
+  @@index([defaultAddressId])
+}
+
+// Profil d'un prestataire, soumis à validation par un agent.
+model ProviderProfile {
+  id               String                   @id @default(uuid())
+  userId           String                   @unique
+  publicName       String
+  bio              String?
+  experienceYears  Int?
+  /// Photo affichée dans les résultats de recherche et sur la fiche publique (§7).
+  avatarFileId     String?
+  validationStatus ProviderValidationStatus @default(profile_incomplete)
+  availabilityStatus String                 @default("unavailable")
+  score            Float                    @default(0)
+  /// Nombre d'avis publiés, dénormalisé (§13).
+  ///
+  /// La recherche affiche « 4,7 ★ (23 avis) » pour chaque résultat : compter
+  /// les avis à chaque ligne de résultat ferait une requête par prestataire.
+  /// Ce compteur est recalculé au dépôt d'un avis et à chaque modération.
+  reviewsCount     Int                      @default(0)
+  /// Motif de la dernière décision de validation, visible du prestataire.
+  ///
+  /// Sans lui, un dossier en `changes_requested` afficherait « à corriger »
+  /// sans dire quoi — le prestataire re-soumettrait à l'identique.
+  rejectionReason  String?
+  /// Interdit au prestataire de re-soumettre son dossier (§5).
+  /// Réservé à l'admin : sert aux cas de fraude avérée.
+  resubmissionBlocked Boolean               @default(false)
+  submittedAt      DateTime?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  user             User                     @relation("UserProvider", fields: [userId], references: [id], onDelete: Cascade)
+  documents        ProviderDocument[]
+  notes            ProviderInternalNote[]
+  missions         Mission[]                @relation("ProviderMissions")
+  services         ProviderService[]
+  zones            ProviderZone[]
+  availability     ProviderAvailability[]
+  unavailabilities ProviderUnavailability[]
+  portfolio        ProviderPortfolioItem[]
+  favoritedBy      ClientFavorite[]         @relation("FavoriteProvider")
+  avatar           File?                    @relation("ProviderAvatar", fields: [avatarFileId], references: [id], onDelete: SetNull)
+
+  @@index([validationStatus])
+  // Le CDC cite explicitement la disponibilité et le score comme critères de
+  // recherche et de tri de la liste prestataires (§4.3).
+  @@index([availabilityStatus])
+  @@index([score])
+  // Recherche mobile (§7) : le filtre appliqué d'office porte TOUJOURS sur ces
+  // deux colonnes à la fois. Un index composite les couvre en une passe.
+  @@index([validationStatus, availabilityStatus])
+}
+
+// Indisponibilité exceptionnelle d'un prestataire (congés, absence ponctuelle).
+// Complète les disponibilités hebdomadaires récurrentes.
+model ProviderUnavailability {
+  id         String          @id @default(uuid())
+  providerId String
+  startAt    DateTime
+  endAt      DateTime
+  reason     String?
+  createdAt  DateTime        @default(now())
+  provider   ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  // Recherche « ce prestataire est-il absent à cette date ? »
+  @@index([startAt, endAt])
+}
+
+// Réalisation présentée par un prestataire (photo de chantier, avant/après).
+model ProviderPortfolioItem {
+  id           String          @id @default(uuid())
+  providerId   String
+  fileId       String
+  title        String?
+  description  String?
+  displayOrder Int             @default(0)
+  createdAt    DateTime        @default(now())
+  provider     ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  file         File            @relation("PortfolioFile", fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+}
+
+// Document justificatif d'un prestataire (pièce d'identité, assurance, etc.).
+model ProviderDocument {
+  id              String          @id @default(uuid())
+  providerId      String
+  type            String
+  fileId          String?
+  status          DocumentStatus  @default(pending)
+  /// Numéro de version du justificatif pour ce type de document.
+  ///
+  /// Re-soumettre ne remplace pas : on ajoute une version (§6). L'historique
+  /// des décisions reste ainsi lisible — on voit ce qui avait été rejeté et
+  /// pourquoi, à côté de ce qui a été fourni ensuite.
+  version         Int             @default(1)
+  rejectionReason String?
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  createdAt       DateTime        @default(now())
+  provider        ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  file            File?           @relation(fields: [fileId], references: [id])
+  reviewer        User?           @relation("DocumentReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([providerId])
+  @@index([status])
+  // Retrouver la dernière version d'un type donné.
+  @@index([providerId, type, version])
+}
+
+// Note interne laissée par un agent sur un prestataire (non visible du prestataire).
+model ProviderInternalNote {
+  id         String          @id @default(uuid())
+  providerId String
+  authorId   String?
+  note       String
+  createdAt  DateTime        @default(now())
+  provider   ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  author     User?           @relation("NoteAuthor", fields: [authorId], references: [id])
+
+  @@index([providerId])
+}
+
+// === US3 : missions, messages, avis, litiges ===
+
+// Une mission = une réservation de service d'un client auprès d'un prestataire.
+model Mission {
+  id           String                 @id @default(uuid())
+  clientId     String
+  providerId   String?
+  // Lot 1 : la prestation vendue (titre, prix, durée) et le lieu d'intervention.
+  // Sans ces deux liens, une mission n'avait ni tarif ni adresse.
+  packId       String?
+  addressId    String?
+  scheduledAt  DateTime?
+  status       MissionStatus          @default(draft)
+  instructions String?
+  /// Montant indicatif FIGÉ à la réservation (§8).
+  ///
+  /// Le prix de la formule peut changer après coup : sans cette copie, le
+  /// montant affiché au client à la réservation ne serait plus celui affiché
+  /// sur sa mission une semaine plus tard.
+  quotedAmount Float?
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  client       User                   @relation("ClientMissions", fields: [clientId], references: [id])
+  provider     ProviderProfile?       @relation("ProviderMissions", fields: [providerId], references: [id])
+  pack         ServicePack?           @relation(fields: [packId], references: [id])
+  address      Address?               @relation(fields: [addressId], references: [id])
+  options      MissionOption[]
+  history      MissionStatusHistory[]
+  reschedules  MissionReschedule[]
+  cancellation MissionCancellation?
+  thread       ChatThread?
+  reviews      Review[]
+  disputes     Dispute[]
+
+  @@index([status])
+  @@index([clientId])
+  @@index([providerId])
+  @@index([packId])
+  @@index([addressId])
+  // Le back-office filtre les missions par période : sans cet index, chaque
+  // filtre de date parcourait toute la table.
+  @@index([scheduledAt])
+}
+
+// Option retenue par le client à la réservation (§8 : `optionIds`).
+//
+// Le prix est recopié pour la même raison que `Mission.quotedAmount` : une
+// option dont le tarif change ne doit pas réécrire le montant d'une mission
+// déjà réservée.
+model MissionOption {
+  missionId String
+  optionId  String
+  title     String
+  price     Float
+  mission   Mission           @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  option    ServicePackOption @relation(fields: [optionId], references: [id])
+
+  @@id([missionId, optionId])
+  @@index([optionId])
+}
+
+// Trace de chaque changement de statut d'une mission (qui, quand, pourquoi).
+model MissionStatusHistory {
+  id        String         @id @default(uuid())
+  missionId String
+  oldStatus MissionStatus?
+  newStatus MissionStatus
+  changedBy String?
+  reason    String?
+  createdAt DateTime       @default(now())
+  mission   Mission        @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  author    User?          @relation("StatusChangeAuthor", fields: [changedBy], references: [id], onDelete: SetNull)
+
+  @@index([missionId])
+}
+
+// Report d'une mission à une autre date.
+model MissionReschedule {
+  id             String   @id @default(uuid())
+  missionId      String
+  oldScheduledAt DateTime?
+  newScheduledAt DateTime
+  reason         String?
+  // Le CDC prévoit un statut : un report peut être demandé puis accepté ou
+  // refusé. Aujourd'hui l'admin reporte directement, d'où le défaut `applied`.
+  status         RescheduleStatus @default(applied)
+  createdBy      String?
+  /// Qui a tranché la demande, et quand (§10).
+  ///
+  /// L'auteur d'une demande ne peut pas l'accepter lui-même : sans ces
+  /// colonnes, rien ne distinguerait un accord des deux parties d'un report
+  /// décidé unilatéralement.
+  decidedBy      String?
+  decidedAt      DateTime?
+  decisionReason String?
+  createdAt      DateTime         @default(now())
+  mission        Mission          @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  author         User?            @relation("RescheduleAuthor", fields: [createdBy], references: [id], onDelete: SetNull)
+  decider        User?            @relation("RescheduleDecider", fields: [decidedBy], references: [id], onDelete: SetNull)
+
+  @@index([missionId])
+  // Contrôle « une seule demande en cours » (§10).
+  @@index([missionId, status])
+}
+
+// Annulation d'une mission (motif obligatoire côté service).
+model MissionCancellation {
+  id          String   @id @default(uuid())
+  missionId   String   @unique
+  reason      String
+  // Champ libre : le motif court d'un côté, les circonstances de l'autre.
+  details     String?
+  /// Annulation tardive : moins de `mission.cancellation_notice_hours` avant
+  /// l'horaire prévu (§8). L'annulation est acceptée quand même — mais elle
+  /// est marquée, ce qui permettra plus tard d'y attacher une conséquence.
+  late        Boolean  @default(false)
+  cancelledBy String?
+  createdAt   DateTime @default(now())
+  mission     Mission  @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  author      User?    @relation("CancellationAuthor", fields: [cancelledBy], references: [id], onDelete: SetNull)
+}
+
+// Fil de discussion lié à une mission.
+model ChatThread {
+  id        String        @id @default(uuid())
+  missionId String        @unique
+  status    String        @default("open")
+  createdAt DateTime      @default(now())
+  mission   Mission       @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  messages  ChatMessage[]
+}
+
+// Un message dans un fil de discussion.
+model ChatMessage {
+  id        String            @id @default(uuid())
+  threadId  String
+  senderId  String?
+  message   String
+  createdAt DateTime          @default(now())
+  readAt    DateTime?
+  thread    ChatThread        @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  sender    User?             @relation("MessageSender", fields: [senderId], references: [id], onDelete: SetNull)
+  files     ChatMessageFile[]
+
+  @@index([threadId])
+  // Pagination chronologique d'une conversation.
+  @@index([createdAt])
+}
+
+// Pièce jointe d'un message (photo du problème, devis...).
+model ChatMessageFile {
+  messageId String
+  fileId    String
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  file      File        @relation("MessageFile", fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, fileId])
+}
+
+// Avis (note + commentaire) laissé après une mission.
+model Review {
+  id        String         @id @default(uuid())
+  missionId String
+  authorId  String?
+  targetId  String?
+  rating    Int
+  comment   String?
+  status    ReviewStatus   @default(published)
+  createdAt DateTime       @default(now())
+  mission   Mission        @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  author    User?          @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  target    User?          @relation("ReviewTarget", fields: [targetId], references: [id], onDelete: SetNull)
+  reports   ReviewReport[]
+
+  @@index([status])
+  @@index([missionId])
+  // Avis publics d'un prestataire : sans cet index, la table entière était parcourue.
+  @@index([targetId])
+  // Un seul avis par mission et par auteur (§11). La règle est aussi vérifiée
+  // dans le service, mais seule la contrainte tient face à deux requêtes
+  // simultanées.
+  @@unique([missionId, authorId])
+}
+
+// Signalement d'un avis par un utilisateur.
+model ReviewReport {
+  id         String       @id @default(uuid())
+  reviewId   String
+  reportedBy String?
+  reason     String
+  // Sans statut, impossible de savoir si un signalement a déjà été traité.
+  status     ReportStatus @default(pending)
+  createdAt  DateTime     @default(now())
+  review     Review       @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  reporter   User?        @relation("ReportAuthor", fields: [reportedBy], references: [id], onDelete: SetNull)
+
+  @@index([reviewId])
+  @@index([status])
+  // Un signalement par personne et par avis (§13) : sinon un même compte
+  // pourrait gonfler artificiellement le compteur de signalements.
+  @@unique([reviewId, reportedBy])
+}
+
+// Litige (ticket de support) rattaché à une mission.
+model Dispute {
+  id          String           @id @default(uuid())
+  missionId   String
+  openedBy    String?
+  reason      String
+  description String?
+  status      DisputeStatus    @default(open)
+  assignedTo  String?
+  decision    String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  mission     Mission          @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  opener      User?            @relation("DisputeOpener", fields: [openedBy], references: [id], onDelete: SetNull)
+  assignee    User?            @relation("DisputeAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
+  messages    DisputeMessage[]
+  files       DisputeFile[]
+
+  @@index([status])
+  @@index([missionId])
+  // Filtrer les litiges d'un agent (CDC §4.5).
+  @@index([assignedTo])
+}
+
+// Un message échangé dans un litige.
+model DisputeMessage {
+  id        String   @id @default(uuid())
+  disputeId String
+  senderId  String?
+  message   String
+  /// Commentaire réservé au back-office.
+  ///
+  /// Le CDC distingue « ajouter un message » (visible des parties) et
+  /// « commentaire interne » (§4.5). Sans ce booléen, les notes des agents
+  /// auraient été visibles du client et du prestataire.
+  internalOnly Boolean @default(false)
+  createdAt DateTime @default(now())
+  dispute   Dispute  @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  sender    User?    @relation("DisputeMessageSender", fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([disputeId])
+  @@index([internalOnly])
+}
+
+// Preuve attachée à un litige (photo, facture, capture d'écran).
+model DisputeFile {
+  disputeId String
+  fileId    String
+  dispute   Dispute @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  file      File    @relation("DisputeEvidence", fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@id([disputeId, fileId])
+}
+
+// === US4 : catalogue, zones, disponibilités ===
+
+// Catégorie principale de service (ex. "Plomberie").
+model CatalogCategory {
+  id           String        @id @default(uuid())
+  name         String
+  slug         String        @unique
+  description  String?
+  // Icône affichée dans l'application publique.
+  iconFileId   String?
+  active       Boolean       @default(true)
+  displayOrder Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  icon         File?         @relation("CategoryIcon", fields: [iconFileId], references: [id], onDelete: SetNull)
+  serviceTypes ServiceType[]
+
+  @@index([active])
+}
+
+// Sous-service rattaché à une catégorie (ex. "Réparation de fuite").
+model ServiceType {
+  id          String            @id @default(uuid())
+  categoryId  String
+  name        String
+  slug        String            @unique
+  description String?
+  active      Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  category    CatalogCategory   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  providerServices ProviderService[]
+
+  @@index([categoryId])
+  @@index([active])
+}
+
+// Service proposé par un prestataire (rattache un prestataire à un type de service).
+model ProviderService {
+  id            String          @id @default(uuid())
+  providerId    String
+  serviceTypeId String
+  title         String
+  description   String?
+  active        Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  provider      ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  serviceType   ServiceType     @relation(fields: [serviceTypeId], references: [id], onDelete: Cascade)
+  packs         ServicePack[]
+
+  @@index([providerId])
+  @@index([serviceTypeId])
+}
+
+// Formule vendable proposée par un prestataire (prix + durée).
+model ServicePack {
+  id                String          @id @default(uuid())
+  providerServiceId String
+  title             String
+  description       String?
+  price             Float
+  durationMinutes   Int
+  active            Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  providerService   ProviderService @relation(fields: [providerServiceId], references: [id], onDelete: Cascade)
+  missions          Mission[]
+  options           ServicePackOption[]
+
+  @@index([providerServiceId])
+}
+
+// Option payante ajoutable à une formule (ex : « déplacement hors zone »).
+model ServicePackOption {
+  id              String      @id @default(uuid())
+  packId          String
+  title           String
+  price           Float
+  durationMinutes Int         @default(0)
+  active          Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  pack            ServicePack @relation(fields: [packId], references: [id], onDelete: Cascade)
+  missions        MissionOption[]
+
+  @@index([packId])
+}
+
+// Ville de couverture (CDC §7 : table `cities`).
+// Avant le Lot 4, `Zone.cityId` était un simple texte libre sans table en face.
+model City {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  countryCode String   @default("CI")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  zones       Zone[]
+
+  @@index([active])
+}
+
+// Zone géographique couverte (ville/commune + rayon).
+//
+// Les coordonnées restent des nombres simples : PostGIS n'est pas installé sur
+// l'instance PostgreSQL de développement. La recherche par rayon utilise donc
+// un pré-filtre par rectangle (indexé sur latitude/longitude) puis un calcul
+// de distance exact. Voir `zones.service.ts` et le document du Lot 4.
+model Zone {
+  id        String         @id @default(uuid())
+  cityId    String?
+  name      String
+  latitude  Float?
+  longitude Float?
+  radiusKm  Float?
+  active    Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  city      City?          @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  providers ProviderZone[]
+
+  @@index([active])
+  @@index([cityId])
+  // Pré-filtre de la recherche par rayon : PostgreSQL peut restreindre sur un
+  // rectangle avant de calculer la distance exacte, ce qui évite de parcourir
+  // toute la table.
+  @@index([latitude, longitude])
+}
+
+// Rattache une zone à un prestataire (relation plusieurs-à-plusieurs).
+model ProviderZone {
+  providerId String
+  zoneId     String
+  provider   ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  zone       Zone            @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+
+  @@id([providerId, zoneId])
+}
+
+// Adresse d'un utilisateur, utilisée pour les missions.
+model Address {
+  id        String   @id @default(uuid())
+  userId    String
+  label     String?
+  city      String?
+  commune   String?
+  details   String?
+  latitude  Float?
+  longitude Float?
+  isDefault Boolean  @default(false)
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  missions  Mission[]
+  defaultForClients ClientProfile[] @relation("ClientDefaultAddress")
+
+  @@index([userId])
+  // Une seule adresse par défaut par utilisateur (§4). La bascule se fait en
+  // transaction dans le service ; l'index sert la lecture « mon adresse par défaut ».
+  @@index([userId, isDefault])
+}
+
+// Disponibilité hebdomadaire récurrente d'un prestataire (jour + créneau horaire).
+model ProviderAvailability {
+  id         String          @id @default(uuid())
+  providerId String
+  weekday    Int             // 0 = dimanche, 1 = lundi, ... 6 = samedi
+  startTime  String          // format "HH:MM"
+  endTime    String          // format "HH:MM"
+  active     Boolean         @default(true)
+  createdAt  DateTime        @default(now())
+  provider   ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  // Recherche « ce prestataire travaille-t-il ce jour-là ? » (§7).
+  @@index([providerId, weekday])
+}
+
+// === US5 : réglages, notifications, exports ===
+
+// Un réglage système modifiable (clé/valeur typée).
+model SystemSetting {
+  key         String   @id
+  value       String
+  type        String   @default("string") // string | number | boolean | json
+  description String?
+  updatedBy   String?
+  updatedAt   DateTime @updatedAt
+  updater     User?    @relation("SettingUpdater", fields: [updatedBy], references: [id], onDelete: SetNull)
+}
+
+// Modèle réutilisable de notification (texte à trous).
+model NotificationTemplate {
+  id            String   @id @default(uuid())
+  code          String   @unique
+  titleTemplate String
+  bodyTemplate  String
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+}
+
+// Une notification envoyée (ou en file d'attente).
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String?
+  type      String
+  title     String
+  body      String
+  channel   String    @default("in_app") // in_app | email | sms | push
+  status    String    @default("queued") // queued | sent | failed
+  /// Données structurées accompagnant la notification (missionId, type…).
+  /// L'application mobile s'en sert pour ouvrir directement le bon écran.
+  data      Json?
+  createdAt DateTime  @default(now())
+  sentAt    DateTime?
+  /// Marquage « lue » (§12). Sans lui, la pastille de non-lus serait impossible.
+  readAt    DateTime?
+  user      User?     @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  // Notifications d'un utilisateur donné.
+  @@index([userId])
+  // Liste « mes notifications » et compteur de non-lus : ces deux colonnes sont
+  // toujours interrogées ensemble.
+  @@index([userId, readAt])
+}
+
+// Une demande d'export opérationnel (fichier généré à accès restreint).
+model ExportJob {
+  id          String    @id @default(uuid())
+  requestedBy String?
+  type        String
+  filters     Json?
+  status      String    @default("pending") // pending | completed | failed
+  fileId      String?
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+  requester   User?     @relation("ExportRequester", fields: [requestedBy], references: [id], onDelete: SetNull)
+  file        File?     @relation("ExportFile", fields: [fileId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  // Retrouver les exports d'un demandeur.
+  @@index([requestedBy])
+}

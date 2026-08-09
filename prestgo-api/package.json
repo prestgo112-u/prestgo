@@ -1,0 +1,26 @@
+{
+  "name": "prestgo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PRESTGO back-office admin and backend services monorepo.",
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "build": "corepack pnpm -r build",
+    "dev": "corepack pnpm -r --parallel dev",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "typecheck": "corepack pnpm -r typecheck",
+    "test": "corepack pnpm -r test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.2",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.2",
+    "vitest": "^2.1.8"
+  }
+}

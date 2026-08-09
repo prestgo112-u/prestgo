@@ -1,0 +1,14 @@
+{
+  "name": "@prestgo/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "openapi.yaml"
+  ],
+  "scripts": {
+    "build": "echo \"Contracts are source artifacts\"",
+    "typecheck": "echo \"No TypeScript sources for @prestgo/contracts\"",
+    "test": "echo \"Contract validation will be added in later phases\""
+  }
+}
